@@ -1,18 +1,26 @@
-use chess::{Cell, Grid};
+use chess::{get_cell_width, Cell, Grid};
 use macroquad::prelude::*;
 
 #[macroquad::main("My Game")]
 async fn main() {
+    let mut cell_width = get_cell_width();
+    let mut grid = Grid::new64(cell_width);
+    let mut highlight_cell: Option<&Cell> = None;
     loop {
-        let h = screen_height();
-        let w = screen_width();
-        let cell_width = if (h > w) { w / 8.0 } else { h / 8.0 };
-        let grid = Grid::new64(cell_width);
+        if cell_width != get_cell_width() {
+            highlight_cell = None;
+            cell_width = get_cell_width();
+            grid = Grid::new64(cell_width);
+        }
         grid.draw();
-        Cell::draw_cas(grid.get_cell(1, 7));
-        let (x, y) = mouse_position();
+        if is_mouse_button_pressed(MouseButton::Left) {
+            highlight_cell = grid.coord_to_cell(mouse_position());
+        }
 
-        draw_circle(x, y, 9.0, GREEN);
+        if let Some(cell) = highlight_cell {
+            cell.highlight();
+        }
+
         next_frame().await
     }
 }

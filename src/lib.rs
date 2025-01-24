@@ -1,7 +1,7 @@
 use macroquad::prelude::*;
 
 pub struct Cell {
-    id: (i32, i32),
+    id: (u32, u32),
     center: (f32, f32),
     origin: (f32, f32),
     color: Color,
@@ -13,14 +13,15 @@ impl Cell {
         let (x, y) = self.origin;
         draw_rectangle(x, y, self.size, self.size, self.color);
     }
-    pub fn draw_cas(cell: &Cell) {
-        let (x, y) = cell.center;
-        draw_circle(x, y, 10.0, GREEN);
+    pub fn highlight(&self) {
+        let (x, y) = self.origin;
+        draw_rectangle(x, y, self.size, self.size, Color::new(0.2, 1.0, 1.0, 0.25));
     }
 }
 
 pub struct Grid {
     cells: Vec<Cell>,
+    cell_size: f32,
 }
 impl Grid {
     pub fn new64(cell_width: f32) -> Grid {
@@ -42,16 +43,40 @@ impl Grid {
                 });
             }
         }
-        Grid { cells }
+        Grid {
+            cells,
+            cell_size: w,
+        }
     }
 
-    pub fn get_cell(&self, x: usize, y: usize) -> &Cell {
-        self.cells.get(x * 8 + y).unwrap()
+    pub fn get_cell(&self, x: u32, y: u32) -> &Cell {
+        self.cells.get((x * 8 + y) as usize).unwrap()
     }
 
     pub fn draw(&self) {
         for cell in self.cells.iter() {
             cell.draw();
         }
+    }
+    //
+    pub fn coord_to_cell(&self, mouse_coords: (f32, f32)) -> Option<&Cell> {
+        let w = self.cell_size;
+        let (xm, ym) = mouse_coords;
+        let (x, y): (u32, u32) = ((ym / w).floor() as u32, (xm / w).floor() as u32);
+        if (x < 8) & (y < 8) {
+            Some(self.get_cell(x, y))
+        } else {
+            None
+        }
+    }
+}
+
+pub fn get_cell_width() -> f32 {
+    let h = screen_height();
+    let w = screen_width();
+    if h > w {
+        w / 8.0
+    } else {
+        h / 8.0
     }
 }
