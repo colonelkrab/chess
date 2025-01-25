@@ -49,6 +49,23 @@ impl Grid {
         }
     }
 
+    pub fn resize(&mut self, cell_width: f32) {
+        let w = cell_width;
+        self.cell_size = w;
+        for cell in self.cells.iter_mut() {
+            let (x, y) = &cell.id;
+
+            let origin = (*x as f32 * w, *y as f32 * w);
+            let center = (origin.0 + (w / 2.0), origin.1 + (w / 2.0));
+            *cell = Cell {
+                origin,
+                size: w,
+                center,
+                ..*cell
+            }
+        }
+    }
+
     pub fn get_cell(&self, x: u32, y: u32) -> &Cell {
         self.cells.get((x * 8 + y) as usize).unwrap()
     }

@@ -10,7 +10,7 @@ async fn main() {
         if cell_width != get_cell_width() {
             highlight_cell = None;
             cell_width = get_cell_width();
-            grid = Grid::new64(cell_width);
+            grid.resize(cell_width);
         }
         grid.draw();
         if is_mouse_button_pressed(MouseButton::Left) {
