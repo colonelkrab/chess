@@ -1,14 +1,21 @@
-use chess::{get_cell_width, Grid, Piece, Side};
+use chess::{get_cell_width, Grid, Piece, PieceType, Side};
 use macroquad::prelude::*;
 
 #[macroquad::main("My Game")]
 async fn main() {
+    set_pc_assets_folder("assets");
+    let pawn_txt: Texture2D = load_texture("pieces_basic/white-pawn.png").await.unwrap();
+    pawn_txt.set_filter(FilterMode::Linear);
+    build_textures_atlas();
     let mut cell_width = get_cell_width();
     let mut grid = Grid::new64(cell_width);
     let mut selected_cell: Option<(u32, u32)> = None;
-    grid.get_cell_mut(0, 0).add(Piece {
+    grid.get_cell_mut(5, 5).add(Piece {
         name: String::from("tesT"),
         side: Side::White,
+        piece_type: PieceType::Pawn,
+        valid_moves: None,
+        txt: pawn_txt,
     });
     loop {
         if cell_width != get_cell_width() {
@@ -19,7 +26,7 @@ async fn main() {
         left_click_handler(&mut grid, &mut selected_cell);
         grid.draw();
         if let Some(cell) = selected_cell {
-            grid.get_cell(cell.0, cell.1).select();
+            on_selected(&mut grid, cell);
         }
 
         next_frame().await
@@ -50,8 +57,26 @@ fn left_click_handler(grid: &mut Grid, selected_cell: &mut Option<(u32, u32)>) {
                 if grid.get_cell(cell.0, cell.1).item.is_none() {
                     return;
                 };
+
                 *selected_cell = Some(cell);
             }
         }
     }
+}
+
+fn on_selected(grid: &mut Grid, cell_: (u32, u32)) {
+    let cell = grid.get_cell(cell_.0, cell_.1);
+    let Some(piece) = &cell.item else { return };
+
+    let Some(valid_moves) = &cell.valid_moves else {
+        let valid_moves_ = piece.calc_valid_moves(cell, grid, (cell_.0, cell_.1));
+        grid.get_cell_mut(cell_.0, cell_.1)
+            .add_valid_moves(valid_moves_);
+        return;
+    };
+
+    for valid_move in valid_moves {
+        grid.get_cell(valid_move.0, valid_move.1).highlight();
+    }
+    cell.highlight();
 }

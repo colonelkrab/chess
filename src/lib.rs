@@ -1,3 +1,5 @@
+use std::vec;
+
 use macroquad::prelude::*;
 pub struct Cell {
     pub id: (u32, u32),
@@ -6,6 +8,7 @@ pub struct Cell {
     color: Color,
     size: f32,
     pub item: Option<Piece>,
+    pub valid_moves: Option<Vec<(u32, u32)>>,
 }
 
 impl Cell {
@@ -13,7 +16,7 @@ impl Cell {
         let (x, y) = self.origin;
         draw_rectangle(x, y, self.size, self.size, self.color);
         if let Some(piece) = &self.item {
-            piece.draw(self.center);
+            piece.draw(self.origin, self.size);
         }
     }
     pub fn highlight(&self) {
@@ -25,14 +28,12 @@ impl Cell {
         self.item = Some(piece);
     }
 
-    pub fn select(&self) {
-        println!("{}", self.item.is_some());
-        if self.item.is_some() {
-            self.highlight();
-        }
+    pub fn add_valid_moves(&mut self, valid_moves: Vec<(u32, u32)>) {
+        self.valid_moves = Some(valid_moves);
     }
 
     pub fn move_item_to(&mut self, dest: &mut Cell) {
+        self.valid_moves = None;
         let piece = self.item.take();
         dest.add(piece.unwrap());
     }
@@ -60,6 +61,7 @@ impl Grid {
                         BLACK
                     },
                     item: None,
+                    valid_moves: None,
                 });
             }
         }
@@ -84,19 +86,18 @@ impl Grid {
     }
 
     pub fn get_cell(&self, x: u32, y: u32) -> &Cell {
-        self.cells.get((x * 8 + y) as usize).unwrap()
+        self.cells.get((x + y * 8) as usize).unwrap()
     }
     pub fn get_cell_mut(&mut self, x: u32, y: u32) -> &mut Cell {
-        self.cells.get_mut((x * 8 + y) as usize).unwrap()
+        self.cells.get_mut((x + y * 8) as usize).unwrap()
     }
-
     pub fn get_cell_mut_pair(
         &mut self,
         cell1: (u32, u32),
         cell2: (u32, u32),
     ) -> (&mut Cell, &mut Cell) {
-        let cell1_idx: u32 = cell1.0 * 8 + cell1.1;
-        let cell2_idx: u32 = cell2.0 * 8 + cell2.1;
+        let cell1_idx: u32 = cell1.0 + cell1.1 * 8;
+        let cell2_idx: u32 = cell2.0 + cell2.1 * 8;
         let mid: u32;
         if cell1_idx < cell2_idx {
             mid = cell1_idx + 1;
@@ -124,7 +125,7 @@ impl Grid {
     pub fn coord_to_cell_id(&self, mouse_coords: (f32, f32)) -> Option<(u32, u32)> {
         let w = self.cell_size;
         let (xm, ym) = mouse_coords;
-        let (x, y): (u32, u32) = ((ym / w).floor() as u32, (xm / w).floor() as u32);
+        let (x, y): (u32, u32) = ((xm / w).floor() as u32, (ym / w).floor() as u32);
         if (x < 8) & (y < 8) {
             Some((x, y))
         } else {
@@ -146,14 +147,54 @@ pub enum Side {
     Black,
     White,
 }
+
+pub enum PieceType {
+    Pawn,
+}
 pub struct Piece {
     pub name: String,
     pub side: Side,
+    pub piece_type: PieceType,
+    pub txt: Texture2D,
+    pub valid_moves: Option<Vec<(u32, u32)>>,
 }
 
 impl Piece {
-    pub fn draw(&self, origin: (f32, f32)) {
+    pub fn draw(&self, origin: (f32, f32), size: f32) {
         let (x, y) = origin;
-        draw_circle(x, y, 4.0, GREEN);
+        draw_texture_ex(
+            &self.txt,
+            x,
+            y,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(size, size)),
+                ..Default::default()
+            },
+        );
     }
+
+    pub fn calc_valid_moves(&self, cell: &Cell, grid: &Grid, cell_: (u32, u32)) -> Vec<(u32, u32)> {
+        let (x, y) = cell_;
+
+        let mut valid_moves: Vec<(u32, u32)> = Vec::new();
+        match self.piece_type {
+            PieceType::Pawn => match self.side {
+                Side::Black => valid_moves.push((x, clamp(y + 1, 0, 7))),
+                Side::White => {
+                    valid_moves.push((x, clamp(y - 1, 0, 7)));
+                }
+            },
+        }
+
+        valid_moves
+    }
+}
+
+fn convert_cell_id_to_vec_idx((x, y): (u32, u32)) -> usize {
+    (x + y * 8) as usize
+}
+
+fn is_valid_coord((x, y): (u32, u32)) -> bool {
+    (x < 8) & (y < 8)
 }
