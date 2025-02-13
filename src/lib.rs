@@ -2,13 +2,13 @@ use std::vec;
 
 use macroquad::prelude::*;
 pub struct Cell {
-    pub id: (u32, u32),
+    pub id: CellId,
     center: (f32, f32),
     origin: (f32, f32),
     color: Color,
     size: f32,
     pub item: Option<Piece>,
-    pub valid_moves: Option<Vec<(u32, u32)>>,
+    pub valid_moves: Option<Vec<CellId>>,
 }
 
 impl Cell {
@@ -24,18 +24,35 @@ impl Cell {
         draw_rectangle(x, y, self.size, self.size, Color::new(0.2, 1.0, 1.0, 0.25));
     }
 
-    pub fn add(&mut self, piece: Piece) {
+    pub fn add_item(&mut self, piece: Piece) {
         self.item = Some(piece);
     }
 
-    pub fn add_valid_moves(&mut self, valid_moves: Vec<(u32, u32)>) {
+    pub fn add_valid_moves(&mut self, valid_moves: Vec<CellId>) {
         self.valid_moves = Some(valid_moves);
     }
 
-    pub fn move_item_to(&mut self, dest: &mut Cell) {
+    pub fn move_item_to(&mut self, dest: &mut Cell, game: &mut Game) {
+        let Some(valid_moves) = &self.valid_moves else {
+            return;
+        };
+
+        let Some(piece) = &self.item else {
+            return;
+        };
+        if !valid_moves.contains(&dest.id) {
+            return;
+        };
+        if let Some(dest_item) = &dest.item {
+            if dest_item.side == piece.side {
+                return;
+            } else {
+                game.move_to_stack(dest.item.take().unwrap());
+            }
+        }
         self.valid_moves = None;
         let piece = self.item.take();
-        dest.add(piece.unwrap());
+        dest.add_item(piece.unwrap());
     }
 }
 
@@ -52,13 +69,13 @@ impl Grid {
                 let origin = (j as f32 * w, i as f32 * w);
                 cells.push(Cell {
                     origin,
-                    id: (j, i),
+                    id: CellId(j, i),
                     size: w,
                     center: (origin.0 + (w / 2.0), origin.1 + (w / 2.0)),
                     color: if ((j % 2 == 0) & (i % 2 == 0)) | ((i + j) % 2 == 0) {
                         WHITE
                     } else {
-                        BLACK
+                        GRAY
                     },
                     item: None,
                     valid_moves: None,
@@ -75,7 +92,7 @@ impl Grid {
         let w = cell_width;
         self.cell_size = w;
         for cell in self.cells.iter_mut() {
-            let (x, y) = &cell.id;
+            let CellId(x, y) = &cell.id;
 
             let origin = (*x as f32 * w, *y as f32 * w);
             let center = (origin.0 + (w / 2.0), origin.1 + (w / 2.0));
@@ -85,33 +102,29 @@ impl Grid {
         }
     }
 
-    pub fn get_cell(&self, x: u32, y: u32) -> &Cell {
-        self.cells.get((x + y * 8) as usize).unwrap()
+    pub fn get_cell(&self, id: &CellId) -> &Cell {
+        self.cells.get(id.to_vec_idx()).unwrap()
     }
-    pub fn get_cell_mut(&mut self, x: u32, y: u32) -> &mut Cell {
-        self.cells.get_mut((x + y * 8) as usize).unwrap()
+    pub fn get_cell_mut(&mut self, coords: &CellId) -> &mut Cell {
+        self.cells.get_mut(coords.to_vec_idx()).unwrap()
     }
-    pub fn get_cell_mut_pair(
-        &mut self,
-        cell1: (u32, u32),
-        cell2: (u32, u32),
-    ) -> (&mut Cell, &mut Cell) {
-        let cell1_idx: u32 = cell1.0 + cell1.1 * 8;
-        let cell2_idx: u32 = cell2.0 + cell2.1 * 8;
-        let mid: u32;
+    pub fn get_cell_mut_pair(&mut self, cell1: &CellId, cell2: &CellId) -> (&mut Cell, &mut Cell) {
+        let cell1_idx: usize = cell1.to_vec_idx();
+        let cell2_idx: usize = cell2.to_vec_idx();
+        let mid: usize;
         if cell1_idx < cell2_idx {
             mid = cell1_idx + 1;
-            let (g1, g2) = self.cells.split_at_mut(mid as usize);
+            let (g1, g2) = self.cells.split_at_mut(mid);
             (
-                g1.get_mut((mid - 1) as usize).unwrap(),
-                g2.get_mut((cell2_idx - mid) as usize).unwrap(),
+                g1.get_mut(mid - 1).unwrap(),
+                g2.get_mut(cell2_idx - mid).unwrap(),
             )
         } else {
             mid = cell2_idx + 1;
-            let (g1, g2) = self.cells.split_at_mut(mid as usize);
+            let (g1, g2) = self.cells.split_at_mut(mid);
             (
-                g2.get_mut((cell1_idx - mid) as usize).unwrap(),
-                g1.get_mut((mid - 1) as usize).unwrap(),
+                g2.get_mut(cell1_idx - mid).unwrap(),
+                g1.get_mut(mid - 1).unwrap(),
             )
         }
     }
@@ -121,13 +134,11 @@ impl Grid {
             cell.draw();
         }
     }
-    //
-    pub fn coord_to_cell_id(&self, mouse_coords: (f32, f32)) -> Option<(u32, u32)> {
+    pub fn coord_to_cell_id(&self, (xm, ym): (f32, f32)) -> Option<CellId> {
         let w = self.cell_size;
-        let (xm, ym) = mouse_coords;
-        let (x, y): (u32, u32) = ((xm / w).floor() as u32, (ym / w).floor() as u32);
-        if (x < 8) & (y < 8) {
-            Some((x, y))
+        let id: CellId = CellId((xm / w).floor() as u32, (ym / w).floor() as u32);
+        if id.is_valid() {
+            Some(id)
         } else {
             None
         }
@@ -143,6 +154,41 @@ pub fn get_cell_width() -> f32 {
         h / 8.0
     }
 }
+
+pub struct PieceTxts {
+    pub pawn_w: Texture2D,
+    pub pawn_b: Texture2D,
+    pub king_w: Texture2D,
+    pub king_b: Texture2D,
+    pub bishop_w: Texture2D,
+    pub bishop_b: Texture2D,
+}
+impl PieceTxts {
+    pub async fn default() -> PieceTxts {
+        let pawn_w: Texture2D = load_texture("pieces_basic/white-pawn.png").await.unwrap();
+
+        let pawn_b: Texture2D = load_texture("pieces_basic/black-pawn.png").await.unwrap();
+        let king_w: Texture2D = load_texture("pieces_basic/white-king.png").await.unwrap();
+
+        let king_b: Texture2D = load_texture("pieces_basic/black-king.png").await.unwrap();
+
+        let bishop_w: Texture2D = load_texture("pieces_basic/white-bishop.png").await.unwrap();
+
+        let bishop_b: Texture2D = load_texture("pieces_basic/black-bishop.png").await.unwrap();
+        build_textures_atlas();
+
+        PieceTxts {
+            pawn_w,
+            pawn_b,
+            king_b,
+            king_w,
+            bishop_b,
+            bishop_w,
+        }
+    }
+}
+
+#[derive(PartialEq)]
 pub enum Side {
     Black,
     White,
@@ -150,6 +196,8 @@ pub enum Side {
 
 pub enum PieceType {
     Pawn,
+    King,
+    Bishop,
 }
 pub struct Piece {
     pub name: String,
@@ -174,27 +222,65 @@ impl Piece {
         );
     }
 
-    pub fn calc_valid_moves(&self, cell: &Cell, grid: &Grid, cell_: (u32, u32)) -> Vec<(u32, u32)> {
-        let (x, y) = cell_;
-
-        let mut valid_moves: Vec<(u32, u32)> = Vec::new();
+    pub fn calc_valid_moves(&self, cell: &Cell, grid: &Grid) -> Vec<CellId> {
+        let CellId(x, y) = cell.id;
+        let mut valid_moves: Vec<CellId> = Vec::new();
         match self.piece_type {
             PieceType::Pawn => match self.side {
-                Side::Black => valid_moves.push((x, clamp(y + 1, 0, 7))),
+                Side::Black => {
+                    let move_id = CellId(x, y + 1);
+                    if move_id.is_valid() {
+                        valid_moves.push(move_id);
+                    }
+                }
                 Side::White => {
-                    valid_moves.push((x, clamp(y - 1, 0, 7)));
+                    if y == 0 {
+                        return valid_moves;
+                    }
+
+                    let move_id = CellId(x, y - 1);
+                    if move_id.is_valid() {
+                        valid_moves.push(move_id);
+                    }
                 }
             },
+            PieceType::King => {}
+            PieceType::Bishop => {}
         }
 
         valid_moves
     }
 }
 
-fn convert_cell_id_to_vec_idx((x, y): (u32, u32)) -> usize {
-    (x + y * 8) as usize
+#[derive(PartialEq)]
+pub struct CellId(pub u32, pub u32);
+impl CellId {
+    pub fn to_vec_idx(&self) -> usize {
+        (self.0 + self.1 * 8) as usize
+    }
+
+    pub fn is_valid(&self) -> bool {
+        (self.0 < 8) & (self.1 < 8)
+    }
 }
 
-fn is_valid_coord((x, y): (u32, u32)) -> bool {
-    (x < 8) & (y < 8)
+pub struct Game {
+    pub white_stack: Vec<Piece>,
+    pub black_stack: Vec<Piece>,
+}
+
+impl Game {
+    pub fn move_to_stack(&mut self, piece: Piece) {
+        match piece.side {
+            Side::Black => self.black_stack.push(piece),
+            Side::White => self.white_stack.push(piece),
+        }
+    }
+
+    pub fn new() -> Game {
+        Game {
+            white_stack: Vec::new(),
+            black_stack: Vec::new(),
+        }
+    }
 }
