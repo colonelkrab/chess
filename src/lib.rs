@@ -208,6 +208,52 @@ pub struct Piece {
 }
 
 impl Piece {
+    pub fn new(piece_type: PieceType, txts: PieceTxts, side: Side) -> Piece {
+        match piece_type {
+            PieceType::Pawn => {
+                let txt = if side == Side::White {
+                    txts.pawn_w
+                } else {
+                    txts.pawn_b
+                };
+                Piece {
+                    name: "Pawn".to_string(),
+                    side,
+                    piece_type,
+                    txt,
+                    valid_moves: None,
+                }
+            }
+            PieceType::King => {
+                let txt = if side == Side::White {
+                    txts.king_w
+                } else {
+                    txts.king_b
+                };
+                Piece {
+                    name: "King".to_string(),
+                    side,
+                    piece_type,
+                    txt,
+                    valid_moves: None,
+                }
+            }
+            PieceType::Bishop => {
+                let txt = if side == Side::White {
+                    txts.bishop_w
+                } else {
+                    txts.bishop_b
+                };
+                Piece {
+                    name: "Bishop".to_string(),
+                    side,
+                    piece_type,
+                    txt,
+                    valid_moves: None,
+                }
+            }
+        }
+    }
     pub fn draw(&self, origin: (f32, f32), size: f32) {
         let (x, y) = origin;
         draw_texture_ex(
@@ -281,6 +327,32 @@ impl Game {
         Game {
             white_stack: Vec::new(),
             black_stack: Vec::new(),
+        }
+    }
+}
+
+pub enum Directions {
+    Right,
+    Left,
+    Up,
+    Down,
+    UpRight,
+    UpLeft,
+    DownRight,
+    DownLeft,
+}
+
+impl Directions {
+    pub fn value(&self) -> (i8, i8) {
+        match self {
+            Directions::Right => (1, 0),
+            Directions::Left => (-1, 0),
+            Directions::Up => (0, -1),
+            Directions::Down => (0, 1),
+            Directions::UpRight => (1, -1),
+            Directions::UpLeft => (-1, -1),
+            Directions::DownRight => (1, 1),
+            Directions::DownLeft => (-1, 1),
         }
     }
 }
