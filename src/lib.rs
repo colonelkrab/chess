@@ -165,16 +165,16 @@ pub struct PieceTxts {
 }
 impl PieceTxts {
     pub async fn default() -> PieceTxts {
-        let pawn_w: Texture2D = load_texture("pieces_basic/white-pawn.png").await.unwrap();
+        let pawn_w: Texture2D = load_texture("tatiana/pw.png").await.unwrap();
 
-        let pawn_b: Texture2D = load_texture("pieces_basic/black-pawn.png").await.unwrap();
-        let king_w: Texture2D = load_texture("pieces_basic/white-king.png").await.unwrap();
+        let pawn_b: Texture2D = load_texture("tatiana/pb.png").await.unwrap();
+        let king_w: Texture2D = load_texture("tatiana/kw.png").await.unwrap();
 
-        let king_b: Texture2D = load_texture("pieces_basic/black-king.png").await.unwrap();
+        let king_b: Texture2D = load_texture("tatiana/kb.png").await.unwrap();
 
-        let bishop_w: Texture2D = load_texture("pieces_basic/white-bishop.png").await.unwrap();
+        let bishop_w: Texture2D = load_texture("tatiana/bw.png").await.unwrap();
 
-        let bishop_b: Texture2D = load_texture("pieces_basic/black-bishop.png").await.unwrap();
+        let bishop_b: Texture2D = load_texture("tatiana/bb.png").await.unwrap();
         build_textures_atlas();
 
         PieceTxts {
