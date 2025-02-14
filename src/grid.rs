@@ -1,6 +1,7 @@
-use std::vec;
-
+use crate::game::Game;
+use crate::piece::Piece;
 use macroquad::prelude::*;
+
 pub struct Cell {
     pub id: CellId,
     center: (f32, f32),
@@ -53,6 +54,18 @@ impl Cell {
         self.valid_moves = None;
         let piece = self.item.take();
         dest.add_item(piece.unwrap());
+    }
+}
+
+#[derive(PartialEq)]
+pub struct CellId(pub u32, pub u32);
+impl CellId {
+    pub fn to_vec_idx(&self) -> usize {
+        (self.0 + self.1 * 8) as usize
+    }
+
+    pub fn is_valid(&self) -> bool {
+        (self.0 < 8) & (self.1 < 8)
     }
 }
 
@@ -141,192 +154,6 @@ impl Grid {
             Some(id)
         } else {
             None
-        }
-    }
-}
-
-pub fn get_cell_width() -> f32 {
-    let h = screen_height();
-    let w = screen_width();
-    if h > w {
-        w / 8.0
-    } else {
-        h / 8.0
-    }
-}
-
-pub struct PieceTxts {
-    pub pawn_w: Texture2D,
-    pub pawn_b: Texture2D,
-    pub king_w: Texture2D,
-    pub king_b: Texture2D,
-    pub bishop_w: Texture2D,
-    pub bishop_b: Texture2D,
-}
-impl PieceTxts {
-    pub async fn default() -> PieceTxts {
-        let pawn_w: Texture2D = load_texture("tatiana/pw.png").await.unwrap();
-
-        let pawn_b: Texture2D = load_texture("tatiana/pb.png").await.unwrap();
-        let king_w: Texture2D = load_texture("tatiana/kw.png").await.unwrap();
-
-        let king_b: Texture2D = load_texture("tatiana/kb.png").await.unwrap();
-
-        let bishop_w: Texture2D = load_texture("tatiana/bw.png").await.unwrap();
-
-        let bishop_b: Texture2D = load_texture("tatiana/bb.png").await.unwrap();
-        build_textures_atlas();
-
-        PieceTxts {
-            pawn_w,
-            pawn_b,
-            king_b,
-            king_w,
-            bishop_b,
-            bishop_w,
-        }
-    }
-}
-
-#[derive(PartialEq)]
-pub enum Side {
-    Black,
-    White,
-}
-
-pub enum PieceType {
-    Pawn,
-    King,
-    Bishop,
-}
-pub struct Piece {
-    pub name: String,
-    pub side: Side,
-    pub piece_type: PieceType,
-    pub txt: Texture2D,
-    pub valid_moves: Option<Vec<(u32, u32)>>,
-}
-
-impl Piece {
-    pub fn new(piece_type: PieceType, txts: PieceTxts, side: Side) -> Piece {
-        match piece_type {
-            PieceType::Pawn => {
-                let txt = if side == Side::White {
-                    txts.pawn_w
-                } else {
-                    txts.pawn_b
-                };
-                Piece {
-                    name: "Pawn".to_string(),
-                    side,
-                    piece_type,
-                    txt,
-                    valid_moves: None,
-                }
-            }
-            PieceType::King => {
-                let txt = if side == Side::White {
-                    txts.king_w
-                } else {
-                    txts.king_b
-                };
-                Piece {
-                    name: "King".to_string(),
-                    side,
-                    piece_type,
-                    txt,
-                    valid_moves: None,
-                }
-            }
-            PieceType::Bishop => {
-                let txt = if side == Side::White {
-                    txts.bishop_w
-                } else {
-                    txts.bishop_b
-                };
-                Piece {
-                    name: "Bishop".to_string(),
-                    side,
-                    piece_type,
-                    txt,
-                    valid_moves: None,
-                }
-            }
-        }
-    }
-    pub fn draw(&self, origin: (f32, f32), size: f32) {
-        let (x, y) = origin;
-        draw_texture_ex(
-            &self.txt,
-            x,
-            y,
-            WHITE,
-            DrawTextureParams {
-                dest_size: Some(vec2(size, size)),
-                ..Default::default()
-            },
-        );
-    }
-
-    pub fn calc_valid_moves(&self, cell: &Cell, grid: &Grid) -> Vec<CellId> {
-        let CellId(x, y) = cell.id;
-        let mut valid_moves: Vec<CellId> = Vec::new();
-        match self.piece_type {
-            PieceType::Pawn => match self.side {
-                Side::Black => {
-                    let move_id = CellId(x, y + 1);
-                    if move_id.is_valid() {
-                        valid_moves.push(move_id);
-                    }
-                }
-                Side::White => {
-                    if y == 0 {
-                        return valid_moves;
-                    }
-
-                    let move_id = CellId(x, y - 1);
-                    if move_id.is_valid() {
-                        valid_moves.push(move_id);
-                    }
-                }
-            },
-            PieceType::King => {}
-            PieceType::Bishop => {}
-        }
-
-        valid_moves
-    }
-}
-
-#[derive(PartialEq)]
-pub struct CellId(pub u32, pub u32);
-impl CellId {
-    pub fn to_vec_idx(&self) -> usize {
-        (self.0 + self.1 * 8) as usize
-    }
-
-    pub fn is_valid(&self) -> bool {
-        (self.0 < 8) & (self.1 < 8)
-    }
-}
-
-pub struct Game {
-    pub white_stack: Vec<Piece>,
-    pub black_stack: Vec<Piece>,
-}
-
-impl Game {
-    pub fn move_to_stack(&mut self, piece: Piece) {
-        match piece.side {
-            Side::Black => self.black_stack.push(piece),
-            Side::White => self.white_stack.push(piece),
-        }
-    }
-
-    pub fn new() -> Game {
-        Game {
-            white_stack: Vec::new(),
-            black_stack: Vec::new(),
         }
     }
 }

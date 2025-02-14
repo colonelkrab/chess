@@ -1,7 +1,16 @@
-use chess::{get_cell_width, CellId, Game, Grid, Piece, PieceTxts, PieceType, Side};
+use crate::game::Game;
+use crate::grid::{CellId, Grid};
+use crate::input::{left_click_handler, on_selected};
+use crate::piece::{Piece, PieceType, Side};
+use crate::textures::PieceTxts;
 use macroquad::prelude::*;
+mod game;
+mod grid;
+mod input;
+mod piece;
+mod textures;
 
-#[macroquad::main("My Game")]
+#[macroquad::main("Chess")]
 async fn main() {
     set_pc_assets_folder("assets");
     let mut cell_width = get_cell_width();
@@ -9,9 +18,8 @@ async fn main() {
     let mut game = Game::new();
     let piecetxts = PieceTxts::default().await;
     let mut selected_cell: Option<CellId> = None;
-    let test1 = CellId(5, 5);
 
-    grid.get_cell_mut(&test1).add_item(Piece {
+    grid.get_cell_mut(&CellId(5, 5)).add_item(Piece {
         name: String::from("white_pawn"),
         side: Side::White,
         piece_type: PieceType::Pawn,
@@ -50,49 +58,12 @@ async fn main() {
     }
 }
 
-fn left_click_handler(grid: &mut Grid, selected_cell: &mut Option<CellId>, game: &mut Game) {
-    match selected_cell {
-        Some(selected) => {
-            if is_mouse_button_pressed(MouseButton::Left) {
-                let Some(dest) = grid.coord_to_cell_id(mouse_position()) else {
-                    return;
-                };
-                if dest == *selected {
-                    *selected_cell = None;
-                    return;
-                }
-                let (selected_c, dest_c) = grid.get_cell_mut_pair(selected, &dest);
-                selected_c.move_item_to(dest_c, game);
-                *selected_cell = None;
-            }
-        }
-        None => {
-            if is_mouse_button_pressed(MouseButton::Left) {
-                let Some(cell) = grid.coord_to_cell_id(mouse_position()) else {
-                    return;
-                };
-                if grid.get_cell(&cell).item.is_none() {
-                    return;
-                };
-
-                *selected_cell = Some(cell);
-            }
-        }
+fn get_cell_width() -> f32 {
+    let h = screen_height();
+    let w = screen_width();
+    if h > w {
+        w / 8.0
+    } else {
+        h / 8.0
     }
-}
-
-fn on_selected(grid: &mut Grid, cell_id: &CellId) {
-    let cell = grid.get_cell(cell_id);
-    let Some(piece) = &cell.item else { return };
-
-    let Some(valid_moves) = &cell.valid_moves else {
-        let valid_moves_ = piece.calc_valid_moves(cell, grid);
-        grid.get_cell_mut(cell_id).add_valid_moves(valid_moves_);
-        return;
-    };
-
-    for valid_move in valid_moves {
-        grid.get_cell(valid_move).highlight();
-    }
-    cell.highlight();
 }
