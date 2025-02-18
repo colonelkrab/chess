@@ -14,6 +14,7 @@ pub fn left_click_handler(grid: &mut Grid, selected_cell: &mut Option<CellId>, g
                 let (selected_c, dest_c) = grid.get_cell_mut_pair(selected, &dest);
                 selected_c.move_item_to(dest_c, game);
                 *selected_cell = None;
+                game.switch_turns(grid);
             }
         }
         None => {
@@ -21,9 +22,14 @@ pub fn left_click_handler(grid: &mut Grid, selected_cell: &mut Option<CellId>, g
                 let Some(cell) = grid.coord_to_cell_id(mouse_position()) else {
                     return;
                 };
-                if grid.get_cell(&cell).item.is_none() {
+
+                let Some(piece) = &grid.get_cell(&cell).item else {
                     return;
                 };
+
+                if piece.side != game.turn {
+                    return;
+                }
 
                 *selected_cell = Some(cell);
             }
@@ -31,13 +37,14 @@ pub fn left_click_handler(grid: &mut Grid, selected_cell: &mut Option<CellId>, g
     }
 }
 
-pub fn on_selected(grid: &mut Grid, cell_id: &CellId) {
+pub fn on_selected(grid: &mut Grid, cell_id: &CellId, game: &mut Game) {
     let cell = grid.get_cell(cell_id);
     let Some(piece) = &cell.item else { return };
 
     let Some(valid_moves) = &cell.valid_moves else {
         let valid_moves_ = piece.calc_valid_moves(cell, grid);
-        grid.get_cell_mut(cell_id).add_valid_moves(valid_moves_);
+        grid.get_cell_mut(cell_id)
+            .add_valid_moves(valid_moves_, game);
         return;
     };
 

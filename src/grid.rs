@@ -1,4 +1,5 @@
 use crate::game::Game;
+use crate::path::Direction;
 use crate::piece::Piece;
 use macroquad::prelude::*;
 
@@ -10,6 +11,7 @@ pub struct Cell {
     size: f32,
     pub item: Option<Piece>,
     pub valid_moves: Option<Vec<CellId>>,
+    pinned: bool,
 }
 
 impl Cell {
@@ -29,8 +31,9 @@ impl Cell {
         self.item = Some(piece);
     }
 
-    pub fn add_valid_moves(&mut self, valid_moves: Vec<CellId>) {
+    pub fn add_valid_moves(&mut self, valid_moves: Vec<CellId>, game: &mut Game) {
         self.valid_moves = Some(valid_moves);
+        game.cell_cache.push(self.id);
     }
 
     pub fn move_item_to(&mut self, dest: &mut Cell, game: &mut Game) {
@@ -57,7 +60,7 @@ impl Cell {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub struct CellId(pub u32, pub u32);
 impl CellId {
     pub fn to_vec_idx(&self) -> usize {
@@ -66,6 +69,21 @@ impl CellId {
 
     pub fn is_valid(&self) -> bool {
         (self.0 < 8) & (self.1 < 8)
+    }
+
+    pub fn try_next_cellid(&self, direction: Direction) -> Option<CellId> {
+        let CellId(x, y) = self;
+        let (p, q) = direction.value();
+        let (x_, y_): (u32, u32) = (
+            (*x as i32 + p).try_into().unwrap_or(10),
+            (*y as i32 + q).try_into().unwrap_or(10),
+        );
+        let next = CellId(x_, y_);
+        if next.is_valid() {
+            Some(next)
+        } else {
+            None
+        }
     }
 }
 
@@ -92,6 +110,7 @@ impl Grid {
                     },
                     item: None,
                     valid_moves: None,
+                    pinned: false,
                 });
             }
         }
@@ -154,32 +173,6 @@ impl Grid {
             Some(id)
         } else {
             None
-        }
-    }
-}
-
-pub enum Directions {
-    Right,
-    Left,
-    Up,
-    Down,
-    UpRight,
-    UpLeft,
-    DownRight,
-    DownLeft,
-}
-
-impl Directions {
-    pub fn value(&self) -> (i8, i8) {
-        match self {
-            Directions::Right => (1, 0),
-            Directions::Left => (-1, 0),
-            Directions::Up => (0, -1),
-            Directions::Down => (0, 1),
-            Directions::UpRight => (1, -1),
-            Directions::UpLeft => (-1, -1),
-            Directions::DownRight => (1, 1),
-            Directions::DownLeft => (-1, 1),
         }
     }
 }

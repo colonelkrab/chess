@@ -7,6 +7,7 @@ use macroquad::prelude::*;
 mod game;
 mod grid;
 mod input;
+mod path;
 mod piece;
 mod textures;
 
@@ -19,29 +20,19 @@ async fn main() {
     let piecetxts = PieceTxts::default().await;
     let mut selected_cell: Option<CellId> = None;
 
-    grid.get_cell_mut(&CellId(5, 5)).add_item(Piece {
-        name: String::from("white_pawn"),
-        side: Side::White,
-        piece_type: PieceType::Pawn,
-        valid_moves: None,
-        txt: piecetxts.pawn_w,
-    });
+    grid.get_cell_mut(&CellId(5, 5))
+        .add_item(Piece::new(PieceType::Pawn, &piecetxts, Side::White));
 
-    grid.get_cell_mut(&CellId(1, 2)).add_item(Piece {
-        name: String::from("black_pawn"),
-        side: Side::Black,
-        piece_type: PieceType::Pawn,
-        valid_moves: None,
-        txt: piecetxts.pawn_b,
-    });
+    grid.get_cell_mut(&CellId(1, 2))
+        .add_item(Piece::new(PieceType::King, &piecetxts, Side::Black));
 
-    grid.get_cell_mut(&CellId(3, 7)).add_item(Piece {
-        name: String::from("black_king"),
-        side: Side::Black,
-        piece_type: PieceType::King,
-        valid_moves: None,
-        txt: piecetxts.king_b,
-    });
+    grid.get_cell_mut(&CellId(3, 2))
+        .add_item(Piece::new(PieceType::Pawn, &piecetxts, Side::Black));
+    grid.get_cell_mut(&CellId(4, 6)).add_item(Piece::new(
+        PieceType::Bishop,
+        &piecetxts,
+        Side::White,
+    ));
     loop {
         if cell_width != get_cell_width() {
             selected_cell = None;
@@ -51,7 +42,7 @@ async fn main() {
         left_click_handler(&mut grid, &mut selected_cell, &mut game);
         grid.draw();
         if let Some(cell) = &selected_cell {
-            on_selected(&mut grid, cell);
+            on_selected(&mut grid, cell, &mut game);
         }
 
         next_frame().await
