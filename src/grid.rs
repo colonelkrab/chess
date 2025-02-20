@@ -36,27 +36,29 @@ impl Cell {
         game.cell_cache.push(self.id);
     }
 
-    pub fn move_item_to(&mut self, dest: &mut Cell, game: &mut Game) {
+    pub fn move_item_to(&mut self, dest: &mut Cell, game: &mut Game) -> bool {
         let Some(valid_moves) = &self.valid_moves else {
-            return;
+            return false;
         };
 
         let Some(piece) = &self.item else {
-            return;
+            return false;
         };
         if !valid_moves.contains(&dest.id) {
-            return;
+            return false;
         };
         if let Some(dest_item) = &dest.item {
             if dest_item.side == piece.side {
-                return;
+                return false;
             } else {
+                // capture opposite piece
                 game.move_to_stack(dest.item.take().unwrap());
             }
         }
         self.valid_moves = None;
         let piece = self.item.take();
         dest.add_item(piece.unwrap());
+        true
     }
 }
 

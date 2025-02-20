@@ -12,9 +12,10 @@ pub fn left_click_handler(grid: &mut Grid, selected_cell: &mut Option<CellId>, g
                     return;
                 }
                 let (selected_c, dest_c) = grid.get_cell_mut_pair(selected, &dest);
-                selected_c.move_item_to(dest_c, game);
+                selected_c
+                    .move_item_to(dest_c, game)
+                    .then(|| game.switch_turns(grid));
                 *selected_cell = None;
-                game.switch_turns(grid);
             }
         }
         None => {

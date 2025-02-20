@@ -32,6 +32,7 @@ pub struct Piece {
     pub txt: Texture2D,
     pub line_of_sight: Vec<Path>,
     pub moveset: Vec<Path>,
+    pub same_line_of_sight_and_moveset: bool,
 }
 
 impl Piece {
@@ -82,6 +83,7 @@ impl Piece {
                     txt,
                     line_of_sight,
                     moveset,
+                    same_line_of_sight_and_moveset: false,
                 }
             }
             PieceType::King => {
@@ -131,6 +133,7 @@ impl Piece {
                     txt,
                     moveset: line_of_sight.clone(),
                     line_of_sight,
+                    same_line_of_sight_and_moveset: true,
                 }
             }
             PieceType::Bishop => {
@@ -164,6 +167,7 @@ impl Piece {
                     txt,
                     moveset: line_of_sight.clone(),
                     line_of_sight,
+                    same_line_of_sight_and_moveset: true,
                 }
             }
         }
@@ -184,30 +188,39 @@ impl Piece {
 
     pub fn calc_valid_moves(&self, cell: &Cell, grid: &Grid) -> Vec<CellId> {
         let mut valid_moves: Vec<CellId> = Vec::new();
-        for path in &self.moveset {
-            let max = match path.magnitude {
-                Magnitude::Any => 10,
-                Magnitude::Fixed(f) => f,
-            };
-            let mut current_cell = cell.id;
-            let mut n: u32 = 0;
-            while n < max {
-                n += 1;
-                let Some(id) = &current_cell.try_next_cellid(path.direction) else {
-                    break;
+        let lists = [&self.moveset, &self.line_of_sight];
+        let mut q = 0;
+        for list in lists {
+            for path in list {
+                let max = match path.magnitude {
+                    Magnitude::Any => 10,
+                    Magnitude::Fixed(f) => f,
                 };
-                current_cell = *id;
-                let Some(piece) = &grid.get_cell(id).item else {
-                    valid_moves.push(current_cell);
-                    continue;
-                };
-                if piece.side == self.side {
-                    break;
-                } else {
-                    valid_moves.push(current_cell);
-                    break;
+                let mut current_cell = cell.id;
+                let mut n: u32 = 0;
+                while n < max {
+                    n += 1;
+                    let Some(id) = &current_cell.try_next_cellid(path.direction) else {
+                        break;
+                    };
+                    current_cell = *id;
+                    let Some(piece) = &grid.get_cell(id).item else {
+                        if q == 0 {
+                            valid_moves.push(current_cell);
+                        }
+                        continue;
+                    };
+                    if piece.side == self.side {
+                        break;
+                    } else {
+                        if (self.same_line_of_sight_and_moveset & (q == 0)) | (q == 1) {
+                            valid_moves.push(current_cell)
+                        }
+                        break;
+                    }
                 }
             }
+            q += 1;
         }
 
         valid_moves
