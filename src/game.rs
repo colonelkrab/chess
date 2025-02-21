@@ -1,6 +1,11 @@
 use crate::grid::{Cell, CellId, Grid};
-use crate::path::Direction;
+use crate::path::{Direction, Magnitude, Path};
 use crate::piece::{Piece, Side};
+
+pub struct BoardStatus {
+    pinned: Vec<CellId>,
+    check: Vec<Path>,
+}
 pub struct Game {
     pub white_stack: Vec<Piece>,
     pub black_stack: Vec<Piece>,
@@ -28,52 +33,66 @@ impl Game {
     pub fn switch_turns(&mut self, grid: &mut Grid) {
         self.turn = self.turn.switch();
         for id in &self.cell_cache {
-            let cell = grid.get_cell_mut(&id);
+            let cell = grid.get_cell_mut(id);
             cell.valid_moves = None;
         }
         self.cell_cache.clear();
+        self.get_board_status(grid, CellId(4, 4));
     }
+    fn get_board_status(&self, grid: &mut Grid, king_cell: CellId) {
+        let Some(king) = &grid.get_cell(&king_cell).item else {
+            return;
+        };
+        let mut pinned_pieces: Vec<CellId> = Vec::new();
+        let mut checks: Vec<Path> = Vec::new();
+        let side = &king.side;
+        for direction in Direction::iterator() {
+            let mut temp: Option<CellId> = None;
+            let mut current_cell = king_cell;
+            let mut n = 0;
 
-    // fn find_pinned(&self, grid: &mut Grid, king: &Cell) {
-    //     let CellId(xk, yk) = king.id;
-    //     let Some(king) = &king.item else {
-    //         return;
-    //     };
-    //     let side = &king.side;
-    //     for direction in Direction::iterator() {
-    //         let (xd, yd) = direction.value();
-    //         let (mut x, mut y) = (xk, yk);
-    //         let mut temp: Option<&Cell>;
-    //         loop {
-    //             (x, y) = (
-    //                 (x as i32 + xd).try_into().unwrap_or(10),
-    //                 (y as i32 + yd).try_into().unwrap_or(10),
-    //             );
-    //             let id = CellId(x, y);
-    //             if !id.is_valid() {
-    //                 break;
-    //             };
-    //             let cell = grid.get_cell(&id);
+            while n < 10 {
+                n += 1;
+                let Some(id) = &current_cell.try_next_cellid(*direction) else {
+                    break;
+                };
 
-    //             let Some(piece) = &cell.item else {
-    //                 continue;
-    //             };
-
-    //             if temp.is_some() {
-    //                 if piece.side == *side {
-    //                     break;
-    //                 } else {
-    //                     if_pinned_update_state()
-    //                 }
-    //             } else {
-    //                 if piece.side == *side {
-    //                     temp = Some(cell);
-    //                     continue;
-    //                 } else {
-    //                     if_check_update()
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
+                current_cell = *id;
+                let cell = grid.get_cell(id);
+                let Some(piece) = &cell.item else {
+                    continue;
+                };
+                let path = Path {
+                    magnitude: Magnitude::Fixed(n),
+                    direction: *direction,
+                };
+                if temp.is_some() {
+                    if piece.side == *side {
+                        break;
+                    } else {
+                        for line_of_sight in &piece.line_of_sight {
+                            if line_of_sight.is_equal_to(&path.flip()) {
+                                pinned_pieces.push(temp.unwrap());
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    if piece.side == *side {
+                        temp = Some(current_cell);
+                        continue;
+                    } else {
+                        for line_of_sight in &piece.line_of_sight {
+                            if line_of_sight.is_equal_to(&path.flip()) {
+                                checks.push(path);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        println!("{:?}", pinned_pieces);
+        println!("{:?}", checks);
+    }
 }

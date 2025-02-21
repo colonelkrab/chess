@@ -11,7 +11,7 @@ pub struct Cell {
     size: f32,
     pub item: Option<Piece>,
     pub valid_moves: Option<Vec<CellId>>,
-    pinned: bool,
+    pub pinned: bool,
 }
 
 impl Cell {
@@ -62,7 +62,7 @@ impl Cell {
     }
 }
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub struct CellId(pub u32, pub u32);
 impl CellId {
     pub fn to_vec_idx(&self) -> usize {

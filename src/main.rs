@@ -23,7 +23,7 @@ async fn main() {
     grid.get_cell_mut(&CellId(5, 5))
         .add_item(Piece::new(PieceType::Pawn, &piecetxts, Side::White));
 
-    grid.get_cell_mut(&CellId(1, 2))
+    grid.get_cell_mut(&CellId(4, 4))
         .add_item(Piece::new(PieceType::King, &piecetxts, Side::Black));
 
     grid.get_cell_mut(&CellId(3, 2))

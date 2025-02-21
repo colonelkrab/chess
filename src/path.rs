@@ -1,7 +1,7 @@
 use self::Direction::*;
 use std::slice::Iter;
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum Direction {
     Right,
     Left,
@@ -33,13 +33,13 @@ impl Direction {
         DIRECTIONS.iter()
     }
 }
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Magnitude {
     Fixed(u32),
     Any,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Path {
     pub magnitude: Magnitude,
     pub direction: Direction,
@@ -65,13 +65,14 @@ impl Path {
 
     pub fn is_equal_to(&self, other: &Path) -> bool {
         let direction: bool = self.direction == other.direction;
-        let magnitude = match self.magnitude {
+
+        let magnitude: bool = match self.magnitude {
             Magnitude::Any => true,
             Magnitude::Fixed(_) => {
                 if other.magnitude == Magnitude::Any {
-                    return true;
+                    true
                 } else {
-                    return self.magnitude == other.magnitude;
+                    self.magnitude == other.magnitude
                 }
             }
         };
