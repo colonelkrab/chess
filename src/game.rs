@@ -1,16 +1,19 @@
-use crate::grid::{Cell, CellId, Grid};
+use crate::grid::{CellId, Grid};
 use crate::path::{Direction, Magnitude, Path};
 use crate::piece::{Piece, Side};
 
 pub struct BoardStatus {
-    pinned: Vec<CellId>,
-    check: Vec<Path>,
+    pinned_pieces: Vec<(CellId, Path)>,
+    checks: Vec<Path>,
 }
+#[derive(Debug)]
 pub struct Game {
     pub white_stack: Vec<Piece>,
     pub black_stack: Vec<Piece>,
     pub turn: Side,
     pub cell_cache: Vec<CellId>,
+    pub white_king: CellId,
+    pub black_king: CellId,
 }
 
 impl Game {
@@ -27,6 +30,8 @@ impl Game {
             black_stack: Vec::new(),
             turn: Side::White,
             cell_cache: Vec::new(),
+            white_king: CellId(0, 0),
+            black_king: CellId(4, 4),
         }
     }
 
@@ -35,19 +40,32 @@ impl Game {
         for id in &self.cell_cache {
             let cell = grid.get_cell_mut(id);
             cell.valid_moves = None;
+            cell.pins = None;
         }
         self.cell_cache.clear();
-        self.get_board_status(grid, CellId(4, 4));
+
+        let status = self.get_board_status(grid).unwrap();
+        for (id, path) in status.pinned_pieces {
+            let cell = grid.get_cell_mut(&id);
+            cell.pins = Some(path);
+            self.cell_cache.push(id);
+        }
     }
-    fn get_board_status(&self, grid: &mut Grid, king_cell: CellId) {
-        let Some(king) = &grid.get_cell(&king_cell).item else {
-            return;
+    fn get_board_status(&self, grid: &mut Grid) -> Option<BoardStatus> {
+        let king_cell: CellId = match self.turn {
+            Side::White => self.white_king,
+            Side::Black => self.black_king,
         };
-        let mut pinned_pieces: Vec<CellId> = Vec::new();
+        let Some(king) = &grid.get_cell(&king_cell).item else {
+            println!("{},{}", king_cell.0, king_cell.1);
+            println!("no king");
+            return None;
+        };
+        let mut pinned_pieces: Vec<(CellId, Path)> = Vec::new();
         let mut checks: Vec<Path> = Vec::new();
         let side = &king.side;
         for direction in Direction::iterator() {
-            let mut temp: Option<CellId> = None;
+            let mut temp: Option<(CellId, Path)> = None;
             let mut current_cell = king_cell;
             let mut n = 0;
 
@@ -66,33 +84,45 @@ impl Game {
                     magnitude: Magnitude::Fixed(n),
                     direction: *direction,
                 };
-                if temp.is_some() {
-                    if piece.side == *side {
-                        break;
-                    } else {
-                        for line_of_sight in &piece.line_of_sight {
-                            if line_of_sight.is_equal_to(&path.flip()) {
-                                pinned_pieces.push(temp.unwrap());
-                                break;
-                            }
+                if piece.side == *side {
+                    match temp {
+                        Some(_) => break,
+                        None => {
+                            temp = Some((current_cell, path));
+                            continue;
                         }
                     }
                 } else {
-                    if piece.side == *side {
-                        temp = Some(current_cell);
-                        continue;
-                    } else {
-                        for line_of_sight in &piece.line_of_sight {
-                            if line_of_sight.is_equal_to(&path.flip()) {
-                                checks.push(path);
-                                break;
+                    match temp {
+                        Some(_) => {
+                            for line_of_sight in &piece.line_of_sight {
+                                if line_of_sight.is_equal_to(&path.flip()) {
+                                    let Some(path_from_pinned) =
+                                        &path.same_direction_subtract(&temp.unwrap().1)
+                                    else {
+                                        println!("path direction not same ");
+                                        break;
+                                    };
+                                    pinned_pieces.push((temp.unwrap().0, *path_from_pinned));
+                                    break;
+                                }
+                            }
+                        }
+                        None => {
+                            for line_of_sight in &piece.line_of_sight {
+                                if line_of_sight.is_equal_to(&path.flip()) {
+                                    checks.push(path);
+                                    break;
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        println!("{:?}", pinned_pieces);
-        println!("{:?}", checks);
+        Some(BoardStatus {
+            pinned_pieces,
+            checks,
+        })
     }
 }

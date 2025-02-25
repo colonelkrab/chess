@@ -1,4 +1,5 @@
 use self::Direction::*;
+use crate::grid::CellId;
 use std::slice::Iter;
 
 #[derive(PartialEq, Clone, Copy, Debug)]
@@ -78,5 +79,42 @@ impl Path {
         };
 
         direction & magnitude
+    }
+
+    pub fn same_direction_subtract(&self, other: &Path) -> Option<Path> {
+        if self.direction != other.direction {
+            return None;
+        }
+
+        let x: u32 = match self.magnitude {
+            Magnitude::Fixed(n) => n,
+            Magnitude::Any => return None,
+        };
+        let y: u32 = match self.magnitude {
+            Magnitude::Fixed(n) => n,
+            Magnitude::Any => return None,
+        };
+
+        let diff_i32 = (x as i32) - (y as i32);
+        Some(Path {
+            direction: self.direction,
+            magnitude: Magnitude::Fixed(diff_i32.unsigned_abs()),
+        })
+    }
+
+    pub fn get_cell_ids(self: &Path, origin: CellId) -> Option<Vec<CellId>> {
+        let n: u32 = match self.magnitude {
+            Magnitude::Any => {
+                return None;
+            }
+            Magnitude::Fixed(f) => f,
+        };
+        let mut i = 0;
+        let mut cells = Vec::new();
+        while i <= n {
+            i += 1;
+            cells.push(origin.try_next_cellid(self.direction).unwrap());
+        }
+        Some(cells)
     }
 }

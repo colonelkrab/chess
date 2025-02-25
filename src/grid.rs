@@ -1,6 +1,6 @@
 use crate::game::Game;
-use crate::path::Direction;
-use crate::piece::Piece;
+use crate::path::{Direction, Path};
+use crate::piece::{Piece, PieceType, Side};
 use macroquad::prelude::*;
 
 pub struct Cell {
@@ -11,7 +11,7 @@ pub struct Cell {
     size: f32,
     pub item: Option<Piece>,
     pub valid_moves: Option<Vec<CellId>>,
-    pub pinned: bool,
+    pub pins: Option<Path>,
 }
 
 impl Cell {
@@ -56,8 +56,19 @@ impl Cell {
             }
         }
         self.valid_moves = None;
+        if piece.piece_type == PieceType::King {
+            match piece.side {
+                Side::White => {
+                    game.white_king = dest.id;
+                }
+                Side::Black => {
+                    game.black_king = dest.id;
+                }
+            }
+        }
         let piece = self.item.take();
         dest.add_item(piece.unwrap());
+
         true
     }
 }
@@ -65,7 +76,7 @@ impl Cell {
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub struct CellId(pub u32, pub u32);
 impl CellId {
-    pub fn to_vec_idx(&self) -> usize {
+    pub fn to_vec_idx(self) -> usize {
         (self.0 + self.1 * 8) as usize
     }
 
@@ -86,6 +97,12 @@ impl CellId {
         } else {
             None
         }
+    }
+
+    pub fn from_vec_idx(idx: usize) -> CellId {
+        let y = (idx as f32 / 8.0).floor() as u32;
+        let x = idx as i32 - (y * 8) as i32;
+        CellId(x as u32, y)
     }
 }
 
@@ -112,7 +129,7 @@ impl Grid {
                     },
                     item: None,
                     valid_moves: None,
-                    pinned: false,
+                    pins: None,
                 });
             }
         }

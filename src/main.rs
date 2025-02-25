@@ -19,7 +19,8 @@ async fn main() {
     let mut game = Game::new();
     let piecetxts = PieceTxts::default().await;
     let mut selected_cell: Option<CellId> = None;
-
+    grid.get_cell_mut(&CellId(0, 0))
+        .add_item(Piece::new(PieceType::King, &piecetxts, Side::White));
     grid.get_cell_mut(&CellId(5, 5))
         .add_item(Piece::new(PieceType::Pawn, &piecetxts, Side::White));
 

@@ -7,7 +7,7 @@ use crate::{
 };
 use macroquad::prelude::*;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum Side {
     Black,
     White,
@@ -20,11 +20,13 @@ impl Side {
         }
     }
 }
+#[derive(PartialEq, Debug)]
 pub enum PieceType {
     Pawn,
     King,
     Bishop,
 }
+#[derive(Debug)]
 pub struct Piece {
     pub name: String,
     pub side: Side,
@@ -222,7 +224,27 @@ impl Piece {
             }
             q += 1;
         }
-
-        valid_moves
+        let Some(pin) = cell.pins else {
+            return valid_moves;
+        };
+        let Some(pin_valid_cellids) = pin.get_cell_ids(cell.id) else {
+            return valid_moves;
+        };
+        common_moves(&pin_valid_cellids, &valid_moves)
     }
+}
+
+fn common_moves(vec1: &[CellId], vec2: &[CellId]) -> Vec<CellId> {
+    let num_vec1: Vec<usize> = vec1.iter().map(|cellid| cellid.to_vec_idx()).collect();
+
+    let num_vec2: Vec<usize> = vec2.iter().map(|cellid| cellid.to_vec_idx()).collect();
+    let mut common = [num_vec1, num_vec2].concat();
+    common.sort();
+    let mut common_cellids: Vec<CellId> = Vec::new();
+    for (x, y) in common.iter().zip(common.iter().skip(1)) {
+        if x == y {
+            common_cellids.push(CellId::from_vec_idx(*x));
+        }
+    }
+    common_cellids
 }
