@@ -1,4 +1,4 @@
-use std::vec;
+use std::{iter, vec};
 
 use crate::{
     grid::{Cell, CellId, Grid},
@@ -224,6 +224,10 @@ impl Piece {
             }
             q += 1;
         }
+        if self.piece_type == PieceType::King {
+            remove_cells_in_check(&mut valid_moves, &self.side, grid);
+            return valid_moves;
+        };
         let Some(pin) = cell.pins else {
             return valid_moves;
         };
@@ -247,4 +251,52 @@ fn common_moves(vec1: &[CellId], vec2: &[CellId]) -> Vec<CellId> {
         }
     }
     common_cellids
+}
+
+fn remove_cells_in_check(valid_cells: &mut Vec<CellId>, side: &Side, grid: &Grid) {
+    let mut remove_list: Vec<usize> = Vec::new();
+    for (i, valid_cell) in valid_cells.iter().enumerate() {
+        let mut continue_ = true;
+
+        for direction in Direction::iterator() {
+            if !continue_ {
+                break;
+            }
+            let mut current_id: CellId = *valid_cell;
+            let mut n = 0;
+
+            while let Some(new_id) = current_id.try_next_cellid(*direction) {
+                if !continue_ {
+                    break;
+                }
+                current_id = new_id;
+                n += 1;
+                let cell = grid.get_cell(&current_id);
+                let Some(piece) = &cell.item else {
+                    continue;
+                };
+
+                let path = Path {
+                    magnitude: Magnitude::Fixed(n),
+                    direction: *direction,
+                };
+                if piece.side == *side {
+                    break;
+                } else {
+                    for line_of_sight in &piece.line_of_sight {
+                        if line_of_sight.is_equal_to(&path.flip()) {
+                            remove_list.push(i);
+                            continue_ = false;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    remove_list.reverse();
+    for i in remove_list {
+        valid_cells.remove(i);
+    }
 }
