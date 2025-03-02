@@ -19,7 +19,6 @@ impl PieceTxts {
         let bishop_w: Texture2D = load_texture("tatiana/bw.png").await.unwrap();
 
         let bishop_b: Texture2D = load_texture("tatiana/bb.png").await.unwrap();
-        build_textures_atlas();
 
         PieceTxts {
             pawn_w,

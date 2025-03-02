@@ -1,6 +1,6 @@
 use crate::grid::{CellId, Grid};
 use crate::path::{Direction, Magnitude, Path};
-use crate::piece::{Piece, Side};
+use crate::pieces::{Piece, Side};
 
 pub struct BoardStatus {
     pinned_pieces: Vec<(CellId, Path)>,
@@ -95,7 +95,7 @@ impl Game {
                 } else {
                     match temp {
                         Some(_) => {
-                            for line_of_sight in &piece.line_of_sight {
+                            for line_of_sight in piece.line_of_sight {
                                 if line_of_sight.is_equal_to(&path.flip()) {
                                     let Some(path_from_pinned) =
                                         &path.same_direction_subtract(&temp.unwrap().1)
@@ -109,7 +109,7 @@ impl Game {
                             }
                         }
                         None => {
-                            for line_of_sight in &piece.line_of_sight {
+                            for line_of_sight in piece.line_of_sight {
                                 if line_of_sight.is_equal_to(&path.flip()) {
                                     checks.push(path);
                                     break;

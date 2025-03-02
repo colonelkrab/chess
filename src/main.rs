@@ -1,14 +1,14 @@
 use crate::game::Game;
 use crate::grid::{CellId, Grid};
 use crate::input::{left_click_handler, on_selected};
-use crate::piece::{Piece, PieceType, Side};
+use crate::pieces::{Piece, PieceType, Side};
 use crate::textures::PieceTxts;
 use macroquad::prelude::*;
 mod game;
 mod grid;
 mod input;
 mod path;
-mod piece;
+mod pieces;
 mod textures;
 
 #[macroquad::main("Chess")]
@@ -17,21 +17,24 @@ async fn main() {
     let mut cell_width = get_cell_width();
     let mut grid = Grid::new64(cell_width);
     let mut game = Game::new();
-    let piecetxts = PieceTxts::default().await;
+    let box_txts: Box<PieceTxts> = Box::new(PieceTxts::default().await);
+    build_textures_atlas();
+    let piecetxts: &PieceTxts = Box::leak(box_txts);
     let mut selected_cell: Option<CellId> = None;
+
     grid.get_cell_mut(&CellId(0, 0))
-        .add_item(Piece::new(PieceType::King, &piecetxts, Side::White));
+        .add_item(Piece::new(PieceType::King, piecetxts, Side::White));
     grid.get_cell_mut(&CellId(5, 5))
-        .add_item(Piece::new(PieceType::Pawn, &piecetxts, Side::White));
+        .add_item(Piece::new(PieceType::Pawn, piecetxts, Side::White));
 
     grid.get_cell_mut(&CellId(4, 4))
-        .add_item(Piece::new(PieceType::King, &piecetxts, Side::Black));
+        .add_item(Piece::new(PieceType::King, piecetxts, Side::Black));
 
     grid.get_cell_mut(&CellId(3, 2))
-        .add_item(Piece::new(PieceType::Pawn, &piecetxts, Side::Black));
+        .add_item(Piece::new(PieceType::Pawn, piecetxts, Side::Black));
     grid.get_cell_mut(&CellId(4, 6)).add_item(Piece::new(
         PieceType::Bishop,
-        &piecetxts,
+        piecetxts,
         Side::White,
     ));
     loop {

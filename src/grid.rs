@@ -1,6 +1,6 @@
 use crate::game::Game;
 use crate::path::{Direction, Path};
-use crate::piece::{Piece, PieceType, Side};
+use crate::pieces::{Piece, PieceType, Side};
 use macroquad::prelude::*;
 
 pub struct Cell {
