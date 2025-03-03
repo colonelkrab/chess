@@ -43,7 +43,7 @@ pub fn on_selected(grid: &mut Grid, cell_id: &CellId, game: &mut Game) {
     let Some(piece) = &cell.item else { return };
 
     let Some(valid_moves) = &cell.valid_moves else {
-        let valid_moves_ = piece.calc_valid_moves(cell, grid);
+        let valid_moves_ = piece.calc_valid_moves(cell, grid, game);
         grid.get_cell_mut(cell_id)
             .add_valid_moves(valid_moves_, game);
         return;

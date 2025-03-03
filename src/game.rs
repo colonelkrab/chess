@@ -6,6 +6,12 @@ pub struct BoardStatus {
     pinned_pieces: Vec<(CellId, Path)>,
     checks: Vec<Path>,
 }
+
+#[derive(Debug)]
+pub struct Check {
+    pub absolute: bool,
+    pub path: Path,
+}
 #[derive(Debug)]
 pub struct Game {
     pub white_stack: Vec<Piece>,
@@ -14,6 +20,7 @@ pub struct Game {
     pub cell_cache: Vec<CellId>,
     pub white_king: CellId,
     pub black_king: CellId,
+    pub checked: Option<Check>,
 }
 
 impl Game {
@@ -23,7 +30,12 @@ impl Game {
             Side::White => self.white_stack.push(piece),
         }
     }
-
+    pub fn king_now(&self) -> &CellId {
+        match self.turn {
+            Side::White => &self.white_king,
+            Side::Black => &self.black_king,
+        }
+    }
     pub fn new() -> Game {
         Game {
             white_stack: Vec::new(),
@@ -32,6 +44,7 @@ impl Game {
             cell_cache: Vec::new(),
             white_king: CellId(0, 0),
             black_king: CellId(4, 4),
+            checked: None,
         }
     }
 
@@ -40,14 +53,22 @@ impl Game {
         for id in &self.cell_cache {
             let cell = grid.get_cell_mut(id);
             cell.valid_moves = None;
-            cell.pins = None;
+            cell.pin = None;
         }
         self.cell_cache.clear();
 
         let status = self.get_board_status(grid).unwrap();
+        if !status.checks.is_empty() {
+            self.checked = Some(Check {
+                absolute: status.checks.len() > 1,
+                path: *status.checks.first().unwrap(),
+            });
+        } else {
+            self.checked = None;
+        }
         for (id, path) in status.pinned_pieces {
             let cell = grid.get_cell_mut(&id);
-            cell.pins = Some(path);
+            cell.pin = Some(path);
             self.cell_cache.push(id);
         }
     }

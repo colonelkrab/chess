@@ -1,4 +1,5 @@
 use crate::{
+    game::Game,
     grid::{Cell, CellId, Grid},
     path::{Direction, Magnitude, Path},
     textures::PieceTxts,
@@ -11,7 +12,7 @@ mod bishop;
 mod king;
 mod pawn;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum Side {
     Black,
     White,
@@ -63,7 +64,7 @@ impl Piece {
         );
     }
 
-    pub fn calc_valid_moves(&self, cell: &Cell, grid: &Grid) -> Vec<CellId> {
+    pub fn calc_valid_moves(&self, cell: &Cell, grid: &Grid, game: &Game) -> Vec<CellId> {
         let mut valid_moves: Vec<CellId> = Vec::new();
         let lists = [&self.moveset, &self.line_of_sight];
         let mut q = 0;
@@ -103,13 +104,19 @@ impl Piece {
             remove_cells_in_check(&mut valid_moves, &self.side, grid);
             return valid_moves;
         };
-        let Some(pin) = cell.pins else {
-            return valid_moves;
-        };
-        let Some(pin_valid_cellids) = pin.get_cell_ids(cell.id) else {
-            return valid_moves;
-        };
-        common_moves(&pin_valid_cellids, &valid_moves)
+
+        if let Some(pin) = cell.pin {
+            println!("some pin");
+            let cellids_in_pin = pin.get_cell_ids(cell.id).unwrap();
+            valid_moves = common_moves(&valid_moves, &cellids_in_pin);
+        }
+        if let Some(check) = &game.checked {
+            let check_cellids = check.path.get_cell_ids(*game.king_now()).unwrap();
+
+            valid_moves = common_moves(&valid_moves, &check_cellids);
+        }
+
+        valid_moves
     }
 }
 
@@ -156,6 +163,9 @@ fn remove_cells_in_check(main: &mut Vec<CellId>, side: &Side, grid: &Grid) {
                     direction: *direction,
                 };
                 if piece.side == *side {
+                    if piece.piece_type == PieceType::King {
+                        continue;
+                    }
                     break;
                 } else {
                     for line_of_sight in piece.line_of_sight {

@@ -82,6 +82,7 @@ impl Path {
     }
 
     pub fn same_direction_subtract(&self, other: &Path) -> Option<Path> {
+        println!("same dir sub: {:?}, {:?}", self, other);
         if self.direction != other.direction {
             return None;
         }
@@ -90,7 +91,7 @@ impl Path {
             Magnitude::Fixed(n) => n,
             Magnitude::Any => return None,
         };
-        let y: u32 = match self.magnitude {
+        let y: u32 = match other.magnitude {
             Magnitude::Fixed(n) => n,
             Magnitude::Any => return None,
         };
@@ -103,6 +104,7 @@ impl Path {
     }
 
     pub fn get_cell_ids(self: &Path, origin: CellId) -> Option<Vec<CellId>> {
+        println!("{:?}", self);
         let n: u32 = match self.magnitude {
             Magnitude::Any => {
                 return None;
@@ -111,9 +113,13 @@ impl Path {
         };
         let mut i = 0;
         let mut cells = Vec::new();
-        while i <= n {
+        let mut temp = origin;
+        while i < n {
             i += 1;
-            cells.push(origin.try_next_cellid(self.direction).unwrap());
+            let new = temp.try_next_cellid(self.direction).unwrap();
+            cells.push(new);
+            temp = new;
+            println!("{:?}", cells);
         }
         Some(cells)
     }

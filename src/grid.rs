@@ -11,7 +11,7 @@ pub struct Cell {
     size: f32,
     pub item: Option<Piece>,
     pub valid_moves: Option<Vec<CellId>>,
-    pub pins: Option<Path>,
+    pub pin: Option<Path>,
 }
 
 impl Cell {
@@ -129,7 +129,7 @@ impl Grid {
                     },
                     item: None,
                     valid_moves: None,
-                    pins: None,
+                    pin: None,
                 });
             }
         }
