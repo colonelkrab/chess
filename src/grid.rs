@@ -195,3 +195,8 @@ impl Grid {
         }
     }
 }
+#[derive(PartialEq)]
+pub struct GridSize {
+    pub grid: f32,
+    pub cell: f32,
+}

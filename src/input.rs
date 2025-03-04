@@ -1,10 +1,16 @@
 use crate::{game::Game, grid::CellId, grid::Grid};
 use macroquad::prelude::*;
-pub fn left_click_handler(grid: &mut Grid, selected_cell: &mut Option<CellId>, game: &mut Game) {
+pub fn left_click_handler(
+    grid: &mut Grid,
+    selected_cell: &mut Option<CellId>,
+    game: &mut Game,
+    cam: &Camera2D,
+) {
+    let mouse_world = cam.screen_to_world(mouse_position().into());
     match selected_cell {
         Some(selected) => {
             if is_mouse_button_pressed(MouseButton::Left) {
-                let Some(dest) = grid.coord_to_cell_id(mouse_position()) else {
+                let Some(dest) = grid.coord_to_cell_id(mouse_world.into()) else {
                     return;
                 };
                 if dest == *selected {
@@ -20,7 +26,7 @@ pub fn left_click_handler(grid: &mut Grid, selected_cell: &mut Option<CellId>, g
         }
         None => {
             if is_mouse_button_pressed(MouseButton::Left) {
-                let Some(cell) = grid.coord_to_cell_id(mouse_position()) else {
+                let Some(cell) = grid.coord_to_cell_id(mouse_world.into()) else {
                     return;
                 };
 

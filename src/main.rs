@@ -1,5 +1,5 @@
 use crate::game::Game;
-use crate::grid::{CellId, Grid};
+use crate::grid::{CellId, Grid, GridSize};
 use crate::input::{left_click_handler, on_selected};
 use crate::pieces::{Piece, PieceType, Side};
 use crate::textures::PieceTxts;
@@ -14,7 +14,7 @@ mod textures;
 #[macroquad::main("Chess")]
 async fn main() {
     set_pc_assets_folder("assets");
-    let mut cell_width = get_cell_width();
+    let mut cell_width = get_grid_size().cell;
     let mut grid = Grid::new64(cell_width);
     let mut game = Game::new();
     let box_txts: Box<PieceTxts> = Box::new(PieceTxts::default().await);
@@ -37,13 +37,25 @@ async fn main() {
         piecetxts,
         Side::White,
     ));
+
     loop {
-        if cell_width != get_cell_width() {
+        let gridsize = get_grid_size();
+        clear_background(BLUE);
+        let cam = Camera2D {
+            target: vec2(gridsize.grid / 2.0, gridsize.grid / 2.),
+            zoom: vec2(2.0 / gridsize.grid, 2.0 / gridsize.grid),
+            offset: vec2(0., 0.),
+            rotation: 0.0,
+            render_target: None,
+            viewport: None,
+        };
+        set_camera(&cam);
+        if cell_width != gridsize.cell {
             selected_cell = None;
-            cell_width = get_cell_width();
+            cell_width = gridsize.cell;
             grid.resize(cell_width);
         }
-        left_click_handler(&mut grid, &mut selected_cell, &mut game);
+        left_click_handler(&mut grid, &mut selected_cell, &mut game, &cam);
         grid.draw();
         if let Some(cell) = &selected_cell {
             on_selected(&mut grid, cell, &mut game);
@@ -53,12 +65,18 @@ async fn main() {
     }
 }
 
-fn get_cell_width() -> f32 {
+fn get_grid_size() -> GridSize {
     let h = screen_height();
     let w = screen_width();
     if h > w {
-        w / 8.0
+        GridSize {
+            grid: w,
+            cell: w / 8.0,
+        }
     } else {
-        h / 8.0
+        GridSize {
+            grid: h,
+            cell: h / 8.0,
+        }
     }
 }
