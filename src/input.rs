@@ -5,8 +5,9 @@ pub fn left_click_handler(
     selected_cell: &mut Option<CellId>,
     game: &mut Game,
     cam: &Camera2D,
+    virtual_mouse: Vec2,
 ) {
-    let mouse_world = cam.screen_to_world(mouse_position().into());
+    let mouse_world = (virtual_mouse);
     match selected_cell {
         Some(selected) => {
             if is_mouse_button_pressed(MouseButton::Left) {
@@ -54,7 +55,6 @@ pub fn on_selected(grid: &mut Grid, cell_id: &CellId, game: &mut Game) {
             .add_valid_moves(valid_moves_, game);
         return;
     };
-
     for valid_move in valid_moves {
         grid.get_cell(valid_move).highlight();
     }
