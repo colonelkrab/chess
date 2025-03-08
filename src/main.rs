@@ -16,7 +16,7 @@ const VIRTUAL_HEIGHT: f32 = 2048.0;
 
 #[macroquad::main("Chess")]
 async fn main() {
-    let render_target = render_target_msaa(VIRTUAL_WIDTH as u32, VIRTUAL_HEIGHT as u32, 4);
+    let render_target = render_target(VIRTUAL_WIDTH as u32, VIRTUAL_HEIGHT as u32);
     render_target.texture.set_filter(FilterMode::Linear);
 
     set_pc_assets_folder("assets");
