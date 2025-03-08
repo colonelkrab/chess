@@ -8,9 +8,12 @@ use bishop::bishop;
 use king::king;
 use macroquad::prelude::*;
 use pawn::pawn;
+use rook::rook;
+use std::f32::consts::PI;
 mod bishop;
 mod king;
 mod pawn;
+mod rook;
 
 #[derive(PartialEq, Debug, Clone)]
 pub enum Side {
@@ -30,6 +33,7 @@ pub enum PieceType {
     Pawn,
     King,
     Bishop,
+    Rook,
 }
 #[derive(Debug)]
 pub struct Piece {
@@ -48,9 +52,10 @@ impl Piece {
             PieceType::Pawn => pawn(side, txts),
             PieceType::King => king(side, txts),
             PieceType::Bishop => bishop(side, txts),
+            PieceType::Rook => rook(side, txts),
         }
     }
-    pub fn draw(&self, origin: (f32, f32), size: f32) {
+    pub fn draw(&self, origin: (f32, f32), size: f32, flip: bool) {
         let (x, y) = origin;
         draw_texture_ex(
             self.txt,
@@ -58,6 +63,7 @@ impl Piece {
             y,
             WHITE,
             DrawTextureParams {
+                rotation: if flip { PI } else { 0.0 },
                 dest_size: Some(vec2(size, size)),
                 ..Default::default()
             },

@@ -15,11 +15,11 @@ pub struct Cell {
 }
 
 impl Cell {
-    pub fn draw(&self) {
+    pub fn draw(&self, flip: bool) {
         let (x, y) = self.origin;
         draw_rectangle(x, y, self.size, self.size, self.color);
         if let Some(piece) = &self.item {
-            piece.draw(self.origin, self.size);
+            piece.draw(self.origin, self.size, flip);
         }
     }
     pub fn highlight(&self) {
@@ -180,9 +180,9 @@ impl Grid {
         }
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&self, flip: bool) {
         for cell in self.cells.iter() {
-            cell.draw();
+            cell.draw(flip);
         }
     }
     pub fn coord_to_cell_id(&self, (xm, ym): (f32, f32)) -> Option<CellId> {

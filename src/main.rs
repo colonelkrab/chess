@@ -1,5 +1,5 @@
 use crate::game::Game;
-use crate::grid::{CellId, Grid, GridSize};
+use crate::grid::{CellId, Grid};
 use crate::input::{left_click_handler, on_selected};
 use crate::pieces::{Piece, PieceType, Side};
 use crate::textures::PieceTxts;
@@ -42,11 +42,12 @@ async fn main() {
         piecetxts,
         Side::White,
     ));
+    grid.get_cell_mut(&CellId(7, 7))
+        .add_item(Piece::new(PieceType::Rook, piecetxts, Side::Black));
 
     let mut render_target_cam =
         Camera2D::from_display_rect(Rect::new(0., 0., VIRTUAL_WIDTH, VIRTUAL_HEIGHT));
     render_target_cam.render_target = Some(render_target.clone());
-    render_target_cam.rotation = 180.0;
 
     loop {
         // Get required scaling value
@@ -54,22 +55,28 @@ async fn main() {
             screen_width() / VIRTUAL_WIDTH,
             screen_height() / VIRTUAL_HEIGHT,
         );
+        let flip: bool = match game.turn {
+            Side::White => false,
+            Side::Black => true,
+        };
 
         // Mouse position in the virtual screen
         let virtual_mouse_pos;
-        if render_target_cam.rotation == 0.0 {
+        if !flip {
+            render_target_cam.rotation = 0.0;
             virtual_mouse_pos = Vec2 {
                 x: (mouse_position().0 - (screen_width() - (VIRTUAL_WIDTH * scale)) * 0.05) / scale,
-                y: (mouse_position().1 - (screen_height() - (VIRTUAL_HEIGHT * scale)) * 0.1)
+                y: (mouse_position().1 - (screen_height() - (VIRTUAL_HEIGHT * scale)) * 0.05)
                     / scale,
             };
         } else {
+            render_target_cam.rotation = 180.0;
             virtual_mouse_pos = Vec2 {
                 x: 2048.0
                     - ((mouse_position().0 - (screen_width() - (VIRTUAL_WIDTH * scale)) * 0.05)
                         / scale),
                 y: 2048.0
-                    - (mouse_position().1 - (screen_height() - (VIRTUAL_HEIGHT * scale)) * 0.1)
+                    - (mouse_position().1 - (screen_height() - (VIRTUAL_HEIGHT * scale)) * 0.05)
                         / scale,
             };
         }
@@ -91,7 +98,8 @@ async fn main() {
                 &render_target_cam.screen_to_world(virtual_mouse_pos)
             )
         }
-        grid.draw();
+
+        grid.draw(flip);
 
         if let Some(cell) = &selected_cell {
             on_selected(&mut grid, cell, &mut game);
@@ -100,11 +108,12 @@ async fn main() {
         draw_texture_ex(
             &render_target.texture,
             (screen_width() - (VIRTUAL_WIDTH * scale)) * 0.05,
-            (screen_height() - (VIRTUAL_HEIGHT * scale)) * 0.1,
+            (screen_height() - (VIRTUAL_HEIGHT * scale)) * 0.05,
             WHITE,
             DrawTextureParams {
                 dest_size: Some(vec2(VIRTUAL_WIDTH * scale, VIRTUAL_HEIGHT * scale)),
                 source: None,
+
                 rotation: 0.0,
                 flip_x: false,
                 flip_y: true,
@@ -112,21 +121,5 @@ async fn main() {
             },
         );
         next_frame().await
-    }
-}
-
-fn get_grid_size() -> GridSize {
-    let h = screen_height();
-    let w = screen_width();
-    if h > w {
-        GridSize {
-            grid: w,
-            cell: w / 8.0,
-        }
-    } else {
-        GridSize {
-            grid: h,
-            cell: h / 8.0,
-        }
     }
 }
