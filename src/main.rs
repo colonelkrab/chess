@@ -59,17 +59,17 @@ async fn main() {
         let virtual_mouse_pos;
         if render_target_cam.rotation == 0.0 {
             virtual_mouse_pos = Vec2 {
-                x: (mouse_position().0 - (screen_width() - (VIRTUAL_WIDTH * scale)) * 0.5) / scale,
-                y: (mouse_position().1 - (screen_height() - (VIRTUAL_HEIGHT * scale)) * 0.5)
+                x: (mouse_position().0 - (screen_width() - (VIRTUAL_WIDTH * scale)) * 0.05) / scale,
+                y: (mouse_position().1 - (screen_height() - (VIRTUAL_HEIGHT * scale)) * 0.1)
                     / scale,
             };
         } else {
             virtual_mouse_pos = Vec2 {
                 x: 2048.0
-                    - ((mouse_position().0 - (screen_width() - (VIRTUAL_WIDTH * scale)) * 0.5)
+                    - ((mouse_position().0 - (screen_width() - (VIRTUAL_WIDTH * scale)) * 0.05)
                         / scale),
                 y: 2048.0
-                    - (mouse_position().1 - (screen_height() - (VIRTUAL_HEIGHT * scale)) * 0.5)
+                    - (mouse_position().1 - (screen_height() - (VIRTUAL_HEIGHT * scale)) * 0.1)
                         / scale,
             };
         }
@@ -99,8 +99,8 @@ async fn main() {
         set_default_camera();
         draw_texture_ex(
             &render_target.texture,
-            (screen_width() - (VIRTUAL_WIDTH * scale)) * 0.5,
-            (screen_height() - (VIRTUAL_HEIGHT * scale)) * 0.5,
+            (screen_width() - (VIRTUAL_WIDTH * scale)) * 0.05,
+            (screen_height() - (VIRTUAL_HEIGHT * scale)) * 0.1,
             WHITE,
             DrawTextureParams {
                 dest_size: Some(vec2(VIRTUAL_WIDTH * scale, VIRTUAL_HEIGHT * scale)),
