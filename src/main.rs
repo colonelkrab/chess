@@ -23,8 +23,8 @@ async fn main() {
     let mut grid = Grid::new64(VIRTUAL_WIDTH / 8.0);
     let mut game = Game::new();
     let box_txts: Box<PieceTxts> = Box::new(PieceTxts::default().await);
-    build_textures_atlas();
     let piecetxts: &PieceTxts = Box::leak(box_txts);
+    build_textures_atlas();
     let mut selected_cell: Option<CellId> = None;
 
     grid.get_cell_mut(&CellId(0, 0))
@@ -32,7 +32,7 @@ async fn main() {
     grid.get_cell_mut(&CellId(5, 5))
         .add_item(Piece::new(PieceType::Pawn, piecetxts, Side::White));
 
-    grid.get_cell_mut(&CellId(4, 4))
+    grid.get_cell_mut(&CellId(4, 3))
         .add_item(Piece::new(PieceType::King, piecetxts, Side::Black));
 
     grid.get_cell_mut(&CellId(3, 2))
@@ -45,6 +45,13 @@ async fn main() {
     grid.get_cell_mut(&CellId(7, 7))
         .add_item(Piece::new(PieceType::Rook, piecetxts, Side::Black));
 
+    grid.get_cell_mut(&CellId(3, 1))
+        .add_item(Piece::new(PieceType::Queen, piecetxts, Side::White));
+    grid.get_cell_mut(&CellId(3, 4)).add_item(Piece::new(
+        PieceType::Knight,
+        piecetxts,
+        Side::Black,
+    ));
     let mut render_target_cam =
         Camera2D::from_display_rect(Rect::new(0., 0., VIRTUAL_WIDTH, VIRTUAL_HEIGHT));
     render_target_cam.render_target = Some(render_target.clone());

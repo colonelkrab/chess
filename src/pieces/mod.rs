@@ -6,13 +6,17 @@ use crate::{
 };
 use bishop::bishop;
 use king::king;
+use knight::knight;
 use macroquad::prelude::*;
 use pawn::pawn;
+use queen::queen;
 use rook::rook;
 use std::f32::consts::PI;
 mod bishop;
 mod king;
+mod knight;
 mod pawn;
+mod queen;
 mod rook;
 
 #[derive(PartialEq, Debug, Clone)]
@@ -34,6 +38,8 @@ pub enum PieceType {
     King,
     Bishop,
     Rook,
+    Queen,
+    Knight,
 }
 #[derive(Debug)]
 pub struct Piece {
@@ -53,6 +59,8 @@ impl Piece {
             PieceType::King => king(side, txts),
             PieceType::Bishop => bishop(side, txts),
             PieceType::Rook => rook(side, txts),
+            PieceType::Queen => queen(side, txts),
+            PieceType::Knight => knight(side, txts),
         }
     }
     pub fn draw(&self, origin: (f32, f32), size: f32, flip: bool) {
@@ -75,6 +83,9 @@ impl Piece {
         let lists = [&self.moveset, &self.line_of_sight];
         let mut q = 0;
         for list in lists {
+            if (self.same_line_of_sight_and_moveset) & (q == 1) {
+                break;
+            }
             for path in list.iter() {
                 let max = match path.magnitude {
                     Magnitude::Any => 10,
@@ -118,7 +129,7 @@ impl Piece {
         }
         if let Some(check) = &game.checked {
             let check_cellids = check.path.get_cell_ids(*game.king_now()).unwrap();
-
+            println!("checkids: {:?} , valid: {:?}", &check_cellids, &valid_moves);
             valid_moves = common_moves(&valid_moves, &check_cellids);
         }
 

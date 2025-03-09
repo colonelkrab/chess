@@ -12,6 +12,14 @@ pub enum Direction {
     UpLeft,
     DownRight,
     DownLeft,
+    LUpRight1,
+    LUpLeft1,
+    LDownRight1,
+    LDownLeft1,
+    LUpRight2,
+    LUpLeft2,
+    LDownRight2,
+    LDownLeft2,
 }
 
 impl Direction {
@@ -25,12 +33,36 @@ impl Direction {
             UpLeft => (-1, -1),
             DownRight => (1, 1),
             DownLeft => (-1, 1),
+            LDownRight1 => (1, -2),
+            LUpRight1 => (1, 2),
+            LUpLeft1 => (-1, 2),
+            LDownLeft1 => (-1, -2),
+            LDownRight2 => (-2, 1),
+            LUpRight2 => (2, 1),
+            LUpLeft2 => (2, -1),
+            LDownLeft2 => (-2, -1),
         }
     }
 
     pub fn iterator() -> Iter<'static, Direction> {
-        static DIRECTIONS: [Direction; 8] =
-            [Right, Left, Up, Down, UpRight, UpLeft, DownRight, DownLeft];
+        static DIRECTIONS: [Direction; 16] = [
+            Right,
+            Left,
+            Up,
+            Down,
+            UpRight,
+            UpLeft,
+            DownRight,
+            DownLeft,
+            LUpRight1,
+            LUpLeft1,
+            LDownRight1,
+            LDownLeft1,
+            LUpRight2,
+            LUpLeft2,
+            LDownRight2,
+            LDownLeft2,
+        ];
         DIRECTIONS.iter()
     }
 }
@@ -57,6 +89,14 @@ impl Path {
             UpLeft => DownRight,
             DownRight => UpLeft,
             DownLeft => UpRight,
+            LUpRight1 => LDownLeft2,
+            LUpLeft1 => LDownRight2,
+            LDownRight1 => LUpLeft2,
+            LDownLeft1 => LUpRight2,
+            LUpRight2 => LDownLeft1,
+            LUpLeft2 => LDownRight1,
+            LDownRight2 => LUpLeft1,
+            LDownLeft2 => LUpRight1,
         };
         Path {
             magnitude: self.magnitude,

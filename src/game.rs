@@ -43,7 +43,7 @@ impl Game {
             turn: Side::White,
             cell_cache: Vec::new(),
             white_king: CellId(0, 0),
-            black_king: CellId(4, 4),
+            black_king: CellId(4, 3),
             checked: None,
         }
     }
