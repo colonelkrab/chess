@@ -21,15 +21,18 @@ async fn main() {
 
     set_pc_assets_folder("assets");
     let mut grid = Grid::new64(VIRTUAL_WIDTH / 8.0);
+    let mut game = Game::new();
     let box_txts: Box<PieceTxts> = Box::new(PieceTxts::default().await);
     let piecetxts: &PieceTxts = Box::leak(box_txts);
     build_textures_atlas();
-
-    let mut game = Game::new(&mut grid, piecetxts);
     let mut selected_cell: Option<CellId> = None;
     let mut render_target_cam =
         Camera2D::from_display_rect(Rect::new(0., 0., VIRTUAL_WIDTH, VIRTUAL_HEIGHT));
     render_target_cam.render_target = Some(render_target.clone());
+    let alg: AlgebraicNotation = AlgebraicNotation::new("kh9");
+    println!("{:?}, {:?}", alg.piece, alg.cell);
+    grid.get_cell_mut(&alg.cell)
+        .add_item(Piece::new(alg.piece, piecetxts, Side::White, alg.cell));
     loop {
         // Get required scaling value
         let scale: f32 = f32::min(

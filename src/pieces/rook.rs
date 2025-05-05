@@ -2,11 +2,12 @@ use macroquad::texture::Texture2D;
 
 use super::{Piece, PieceType, Side};
 use crate::{
+    grid::CellId,
     path::{Direction, Magnitude, Path},
     textures::PieceTxts,
 };
 
-pub fn rook(side: Side, txts: &'static PieceTxts) -> Piece {
+pub fn rook(side: Side, txts: &'static PieceTxts, cell: CellId) -> Piece {
     let txt: &Texture2D = if side == Side::White {
         &txts.rook_w
     } else {
@@ -30,6 +31,8 @@ pub fn rook(side: Side, txts: &'static PieceTxts) -> Piece {
             magnitude: Magnitude::Any,
         },
     ];
+    let mut cell_history = Vec::new();
+    cell_history.push(cell);
     Piece {
         name: "Rook".to_string(),
         side,
@@ -38,5 +41,6 @@ pub fn rook(side: Side, txts: &'static PieceTxts) -> Piece {
         moveset: &LINE_OF_SIGHT,
         line_of_sight: &LINE_OF_SIGHT,
         same_line_of_sight_and_moveset: true,
+        cell_history,
     }
 }

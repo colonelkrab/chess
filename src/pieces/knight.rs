@@ -2,11 +2,12 @@ use macroquad::texture::Texture2D;
 
 use super::{Piece, PieceType, Side};
 use crate::{
+    grid::CellId,
     path::{Direction, Magnitude, Path},
     textures::PieceTxts,
 };
 
-pub fn knight(side: Side, txts: &'static PieceTxts) -> Piece {
+pub fn knight(side: Side, txts: &'static PieceTxts, cell: CellId) -> Piece {
     let txt: &Texture2D = if side == Side::White {
         &txts.knight_w
     } else {
@@ -46,6 +47,8 @@ pub fn knight(side: Side, txts: &'static PieceTxts) -> Piece {
             magnitude: Magnitude::Fixed(1),
         },
     ];
+    let mut cell_history = Vec::new();
+    cell_history.push(cell);
     Piece {
         name: "Knight".to_string(),
         side,
@@ -54,5 +57,6 @@ pub fn knight(side: Side, txts: &'static PieceTxts) -> Piece {
         moveset: &LINE_OF_SIGHT,
         line_of_sight: &LINE_OF_SIGHT,
         same_line_of_sight_and_moveset: true,
+        cell_history,
     }
 }

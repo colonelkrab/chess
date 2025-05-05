@@ -1,12 +1,15 @@
+use std::cell;
+
 use macroquad::texture::Texture2D;
 
 use super::{Piece, PieceType, Side};
 use crate::{
+    grid::CellId,
     path::{Direction, Magnitude, Path},
     textures::PieceTxts,
 };
 
-pub fn bishop(side: Side, txts: &'static PieceTxts) -> Piece {
+pub fn bishop(side: Side, txts: &'static PieceTxts, cell: CellId) -> Piece {
     let txt: &Texture2D = if side == Side::White {
         &txts.bishop_w
     } else {
@@ -30,6 +33,8 @@ pub fn bishop(side: Side, txts: &'static PieceTxts) -> Piece {
             magnitude: Magnitude::Any,
         },
     ];
+    let mut cell_history = Vec::new();
+    cell_history.push(cell);
     Piece {
         name: "Bishop".to_string(),
         side,
@@ -38,5 +43,6 @@ pub fn bishop(side: Side, txts: &'static PieceTxts) -> Piece {
         moveset: &LINE_OF_SIGHT,
         line_of_sight: &LINE_OF_SIGHT,
         same_line_of_sight_and_moveset: true,
+        cell_history,
     }
 }

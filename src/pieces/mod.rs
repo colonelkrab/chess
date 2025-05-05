@@ -46,6 +46,8 @@ pub struct Piece {
     pub name: String,
     pub side: Side,
     pub piece_type: PieceType,
+
+    pub cell_history: Vec<CellId>,
     pub txt: &'static Texture2D,
     pub line_of_sight: &'static [Path],
     pub moveset: &'static [Path],
@@ -53,14 +55,14 @@ pub struct Piece {
 }
 
 impl Piece {
-    pub fn new(piece_type: PieceType, txts: &'static PieceTxts, side: Side) -> Piece {
+    pub fn new(piece_type: PieceType, txts: &'static PieceTxts, side: Side, cell: CellId) -> Piece {
         match piece_type {
-            PieceType::Pawn => pawn(side, txts),
-            PieceType::King => king(side, txts),
-            PieceType::Bishop => bishop(side, txts),
-            PieceType::Rook => rook(side, txts),
-            PieceType::Queen => queen(side, txts),
-            PieceType::Knight => knight(side, txts),
+            PieceType::Pawn => pawn(side, txts, cell),
+            PieceType::King => king(side, txts, cell),
+            PieceType::Bishop => bishop(side, txts, cell),
+            PieceType::Rook => rook(side, txts, cell),
+            PieceType::Queen => queen(side, txts, cell),
+            PieceType::Knight => knight(side, txts, cell),
         }
     }
     pub fn draw(&self, origin: (f32, f32), size: f32, flip: bool) {

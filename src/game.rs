@@ -1,6 +1,9 @@
+use std::process::exit;
+
 use crate::grid::{CellId, Grid};
 use crate::path::{Direction, Magnitude, Path};
-use crate::pieces::{Piece, Side};
+use crate::pieces::{Piece, PieceType, Side};
+use crate::textures::PieceTxts;
 
 pub struct BoardStatus {
     pinned_pieces: Vec<(CellId, Path)>,
@@ -36,14 +39,22 @@ impl Game {
             Side::Black => &self.black_king,
         }
     }
-    pub fn new() -> Game {
+    pub fn new(grid: &mut Grid, piecetxts: &'static PieceTxts) -> Game {
+        let starting_pos =
+            "wra1 wnb1 wbc1 wqd1 wke1 wbf1 wng1 wrh1 wpa2 wpb2 wpc2 wpd2 wpe2 wpf2 wpg2 wph2 bra8 bnb8 bbc8 bqd8 bke8 bbf8 bng8 brh8 bpa7 bpb7 bpc7 bpd7 bpe7 bpf7 bpg7 bph7";
+
+        for code in starting_pos.split_whitespace() {
+            let alg = AlgebraicNotation::new(code);
+            grid.get_cell_mut(&alg.cell)
+                .add_item(Piece::new(alg.piece, piecetxts, alg.side, alg.cell));
+        }
         Game {
             white_stack: Vec::new(),
             black_stack: Vec::new(),
             turn: Side::White,
             cell_cache: Vec::new(),
-            white_king: CellId(0, 0),
-            black_king: CellId(4, 3),
+            white_king: CellId(4, 7),
+            black_king: CellId(4, 0),
             checked: None,
         }
     }
@@ -105,6 +116,9 @@ impl Game {
                     magnitude: Magnitude::Fixed(n),
                     direction: *direction,
                 };
+                if [Direction::Left, Direction::Right].contains(direction) {
+                    //TODO
+                }
                 if piece.side == *side {
                     match temp {
                         Some(_) => break,
@@ -145,5 +159,50 @@ impl Game {
             pinned_pieces,
             checks,
         })
+    }
+}
+pub struct AlgebraicNotation {
+    pub piece: PieceType,
+    pub cell: CellId,
+    pub side: Side,
+}
+
+impl AlgebraicNotation {
+    pub fn new(code: &str) -> Self {
+        let str_array: Vec<char> = code.chars().collect();
+        let (side_, piece_, horiz, vert) = (str_array[0], str_array[1], str_array[2], str_array[3]);
+        let side = match side_ {
+            'b' => Side::Black,
+            'w' => Side::White,
+            _ => Side::Black,
+        };
+        let piece = match piece_ {
+            'k' => PieceType::King,
+            'q' => PieceType::Queen,
+            'n' => PieceType::Knight,
+            'b' => PieceType::Bishop,
+            'r' => PieceType::Rook,
+            'p' => PieceType::Pawn,
+            _ => {
+                println!("wrong code for piece");
+                PieceType::Pawn
+            }
+        };
+        let x: u32 = match horiz {
+            'a' => 0,
+            'b' => 1,
+            'c' => 2,
+            'd' => 3,
+            'e' => 4,
+            'f' => 5,
+            'g' => 6,
+            'h' => 7,
+            _ => 0,
+        };
+
+        let y: u32 = 8 - vert.to_digit(10).unwrap();
+        let cell = CellId(x, y);
+
+        Self { side, piece, cell }
     }
 }

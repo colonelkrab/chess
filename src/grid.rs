@@ -66,8 +66,9 @@ impl Cell {
                 }
             }
         }
-        let piece = self.item.take();
-        dest.add_item(piece.unwrap());
+        let mut piece = self.item.take().unwrap();
+        piece.cell_history.push(dest.id);
+        dest.add_item(piece);
 
         true
     }
