@@ -138,9 +138,9 @@ impl Game {
                                         break;
                                     };
                                     pinned_pieces.push((temp.unwrap().0, *path_from_pinned));
-                                    break;
                                 }
                             }
+                            break;
                         }
                         None => {
                             for line_of_sight in piece.line_of_sight {

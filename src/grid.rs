@@ -76,7 +76,7 @@ impl Cell {
     }
 }
 
-#[derive(PartialEq, Clone, Copy, Debug)]
+#[derive(PartialEq, Clone, Copy, Debug, Eq, Hash)]
 pub struct CellId(pub u32, pub u32);
 impl CellId {
     pub fn to_vec_idx(self) -> usize {

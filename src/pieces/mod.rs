@@ -1,4 +1,4 @@
-use std::f32::consts::PI;
+use std::{collections::HashSet, f32::consts::PI};
 
 use crate::{
     game::Game,
@@ -82,12 +82,15 @@ impl Piece {
     }
 
     pub fn calc_valid_moves(&self, cell: &Cell, grid: &Grid, game: &Game) -> Vec<CellId> {
-        let mut valid_moves: Vec<CellId> = Vec::new();
-        let lists = [&self.moveset, &self.line_of_sight];
+        let mut valid_moves: HashSet<CellId> = HashSet::new();
+
+        let extra_moves = self.extra_moves(cell.id, grid, game);
+        let lists = [&self.moveset, &self.line_of_sight, &extra_moves.as_slice()];
         let mut q = 0;
         for list in lists {
             if (self.same_line_of_sight_and_moveset) & (q == 1) {
-                break;
+                q += 1;
+                continue;
             }
             for path in list.iter() {
                 let max = match path.magnitude {
@@ -103,16 +106,18 @@ impl Piece {
                     };
                     current_cell = *id;
                     let Some(piece) = &grid.get_cell(id).item else {
-                        if q == 0 {
-                            valid_moves.push(current_cell);
+                        if (q == 0) | (q == 2) {
+                            valid_moves.insert(current_cell);
                         }
                         continue;
                     };
+
+                    println!("{:?}", valid_moves);
                     if piece.side == self.side {
                         break;
                     } else {
                         if (self.same_line_of_sight_and_moveset & (q == 0)) | (q == 1) {
-                            valid_moves.push(current_cell)
+                            valid_moves.insert(current_cell);
                         }
                         break;
                     }
@@ -120,8 +125,7 @@ impl Piece {
             }
             q += 1;
         }
-        self.add_extra_moves(cell.id, &mut valid_moves, grid, game);
-
+        let mut valid_moves = Vec::from_iter(valid_moves);
         if self.piece_type == PieceType::King {
             remove_cells_in_check(&mut valid_moves, &self.side, grid);
             return valid_moves;
@@ -141,21 +145,22 @@ impl Piece {
         valid_moves
     }
 
-    pub fn add_extra_moves(
-        &self,
-        cell: CellId,
-        valid_moves: &mut Vec<CellId>,
-        grid: &Grid,
-        game: &Game,
-    ) {
+    pub fn extra_moves(&self, cell: CellId, grid: &Grid, game: &Game) -> Vec<Path> {
         let CellId(x, y) = cell;
+        let mut extra_moves: Vec<Path> = Vec::new();
         match self.piece_type {
             PieceType::Pawn => {
                 // pawn initial double move
                 if self.prev_cell.is_none() {
                     match self.side {
-                        Side::Black => valid_moves.push(CellId(x, y + 2)),
-                        Side::White => valid_moves.push(CellId(x, y - 2)),
+                        Side::Black => extra_moves.push(Path {
+                            magnitude: Magnitude::Fixed(2),
+                            direction: Direction::Down,
+                        }),
+                        Side::White => extra_moves.push(Path {
+                            magnitude: Magnitude::Fixed(2),
+                            direction: Direction::Up,
+                        }),
                     }
                 }
                 // pawn en passant
@@ -184,16 +189,38 @@ impl Piece {
                         continue;
                     };
                     let diff = prev_cell.1.abs_diff(adj_cell.1);
-                    if diff == 2 {
-                        match self.side {
-                            Side::Black => valid_moves.push(CellId(adj_cell.0, adj_cell.1 + 1)),
-                            Side::White => valid_moves.push(CellId(adj_cell.0, adj_cell.1 - 1)),
+                }
+                extra_moves
+            }
+            PieceType::King => {
+                for direction in [Direction::Right, Direction::Left] {
+                    let max = 10;
+                    let mut n = 0;
+                    let mut current_cell = cell;
+                    while n < max {
+                        n += 1;
+                        let Some(next_cell) = &current_cell.try_next_cellid(direction) else {
+                            break;
+                        };
+
+                        current_cell = *next_cell;
+                        let Some(piece) = &grid.get_cell(&current_cell).item else {
+                            continue;
+                        };
+                        if (piece.piece_type == PieceType::Rook) && (n > 2) {
+                            println!("castle available {:?}", direction);
+                            extra_moves.push(Path {
+                                magnitude: Magnitude::Fixed(2),
+                                direction,
+                            });
+                        } else {
+                            break;
                         }
                     }
                 }
+                extra_moves
             }
-            PieceType::King => {}
-            _ => {}
+            _ => extra_moves,
         }
     }
 }
@@ -249,10 +276,10 @@ fn remove_cells_in_check(main: &mut Vec<CellId>, side: &Side, grid: &Grid) {
                     for line_of_sight in piece.line_of_sight {
                         if line_of_sight.is_equal_to(&path.flip()) {
                             remove_list.push(i);
-                            continue_ = false;
                             break;
                         }
                     }
+                    continue_ = false;
                 }
             }
         }

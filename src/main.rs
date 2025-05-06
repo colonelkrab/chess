@@ -71,14 +71,6 @@ async fn main() {
             &render_target_cam,
             virtual_mouse_pos,
         );
-        if is_mouse_button_pressed(MouseButton::Left) {
-            println!("{:?}", mouse_position());
-            println!("{:?}", virtual_mouse_pos);
-            println!(
-                "{:?}",
-                &render_target_cam.screen_to_world(virtual_mouse_pos)
-            )
-        }
 
         grid.draw(flip);
 
