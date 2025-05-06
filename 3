@@ -52,7 +52,6 @@ pub struct Piece {
     pub line_of_sight: &'static [Path],
     pub moveset: &'static [Path],
     pub same_line_of_sight_and_moveset: bool,
-    pub last_played_move: Option<u32>,
 }
 
 impl Piece {
@@ -120,8 +119,7 @@ impl Piece {
             }
             q += 1;
         }
-        self.add_extra_moves(cell.id, &mut valid_moves, grid, game);
-
+        self.add_extra_moves(cell.id, &mut valid_moves, grid);
         if self.piece_type == PieceType::King {
             remove_cells_in_check(&mut valid_moves, &self.side, grid);
             return valid_moves;
@@ -141,24 +139,16 @@ impl Piece {
         valid_moves
     }
 
-    pub fn add_extra_moves(
-        &self,
-        cell: CellId,
-        valid_moves: &mut Vec<CellId>,
-        grid: &Grid,
-        game: &Game,
-    ) {
+    pub fn add_extra_moves(&self, cell: CellId, valid_moves: &mut Vec<CellId>, grid: &Grid) {
         let CellId(x, y) = cell;
         match self.piece_type {
             PieceType::Pawn => {
-                // pawn initial double move
                 if self.prev_cell.is_none() {
                     match self.side {
                         Side::Black => valid_moves.push(CellId(x, y + 2)),
                         Side::White => valid_moves.push(CellId(x, y - 2)),
                     }
                 }
-                // pawn en passant
                 for x_ in [x as i32 + 1, x as i32 - 1] {
                     if x_ < 0 {
                         continue;
@@ -174,16 +164,16 @@ impl Piece {
                         continue;
                     }
 
+                    println!("diff piece");
                     if piece.side == self.side {
                         continue;
                     }
+                    println!("en passant available");
                     let Some(prev_cell) = piece.prev_cell else {
                         continue;
                     };
-                    if piece.last_played_move.unwrap().abs_diff(game.move_count) != 1 {
-                        continue;
-                    };
                     let diff = prev_cell.1.abs_diff(adj_cell.1);
+                    println!("{diff}");
                     if diff == 2 {
                         match self.side {
                             Side::Black => valid_moves.push(CellId(adj_cell.0, adj_cell.1 + 1)),

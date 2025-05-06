@@ -66,8 +66,10 @@ impl Cell {
                 }
             }
         }
+
         let mut piece = self.item.take().unwrap();
-        piece.cell_history.push(dest.id);
+        piece.prev_cell = Some(self.id);
+        piece.last_played_move = Some(game.move_count);
         dest.add_item(piece);
 
         true

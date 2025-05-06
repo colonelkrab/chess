@@ -2,12 +2,11 @@ use macroquad::texture::Texture2D;
 
 use super::{Piece, PieceType, Side};
 use crate::{
-    grid::CellId,
     path::{Direction, Magnitude, Path},
     textures::PieceTxts,
 };
 
-pub fn pawn(side: Side, txts: &'static PieceTxts, cell: CellId) -> Piece {
+pub fn pawn(side: Side, txts: &'static PieceTxts) -> Piece {
     const LINE_OF_SIGHT_WHITE: [Path; 2] = [
         Path {
             direction: Direction::UpLeft,
@@ -49,8 +48,6 @@ pub fn pawn(side: Side, txts: &'static PieceTxts, cell: CellId) -> Piece {
         line_of_sight = &LINE_OF_SIGHT_BLACK;
         moveset = &MOVESET_BLACK;
     };
-    let mut cell_history = Vec::new();
-    cell_history.push(cell);
     Piece {
         name: "Pawn".to_string(),
         side,
@@ -59,6 +56,7 @@ pub fn pawn(side: Side, txts: &'static PieceTxts, cell: CellId) -> Piece {
         line_of_sight,
         moveset,
         same_line_of_sight_and_moveset: false,
-        cell_history,
+        prev_cell: None,
+        last_played_move: None,
     }
 }

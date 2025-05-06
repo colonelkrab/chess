@@ -1,5 +1,3 @@
-use std::process::exit;
-
 use crate::grid::{CellId, Grid};
 use crate::path::{Direction, Magnitude, Path};
 use crate::pieces::{Piece, PieceType, Side};
@@ -24,6 +22,7 @@ pub struct Game {
     pub white_king: CellId,
     pub black_king: CellId,
     pub checked: Option<Check>,
+    pub move_count: u32,
 }
 
 impl Game {
@@ -46,7 +45,7 @@ impl Game {
         for code in starting_pos.split_whitespace() {
             let alg = AlgebraicNotation::new(code);
             grid.get_cell_mut(&alg.cell)
-                .add_item(Piece::new(alg.piece, piecetxts, alg.side, alg.cell));
+                .add_item(Piece::new(alg.piece, piecetxts, alg.side));
         }
         Game {
             white_stack: Vec::new(),
@@ -56,11 +55,13 @@ impl Game {
             white_king: CellId(4, 7),
             black_king: CellId(4, 0),
             checked: None,
+            move_count: 0,
         }
     }
 
     pub fn switch_turns(&mut self, grid: &mut Grid) {
         self.turn = self.turn.switch();
+        self.move_count += 1;
         for id in &self.cell_cache {
             let cell = grid.get_cell_mut(id);
             cell.valid_moves = None;
@@ -116,9 +117,7 @@ impl Game {
                     magnitude: Magnitude::Fixed(n),
                     direction: *direction,
                 };
-                if [Direction::Left, Direction::Right].contains(direction) {
-                    //TODO
-                }
+
                 if piece.side == *side {
                     match temp {
                         Some(_) => break,
