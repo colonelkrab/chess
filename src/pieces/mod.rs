@@ -1,7 +1,7 @@
 use std::{collections::HashSet, f32::consts::PI};
 
 use crate::{
-    game::Game,
+    game::{EnPassant, Game},
     grid::{Cell, CellId, Grid},
     path::{Direction, Magnitude, Path},
     textures::PieceTxts,
@@ -81,7 +81,7 @@ impl Piece {
         );
     }
 
-    pub fn calc_valid_moves(&self, cell: &Cell, grid: &Grid, game: &Game) -> Vec<CellId> {
+    pub fn calc_valid_moves(&self, cell: &Cell, grid: &Grid, game: &mut Game) -> Vec<CellId> {
         let mut valid_moves: HashSet<CellId> = HashSet::new();
 
         let extra_moves = self.extra_moves(cell.id, grid, game);
@@ -101,7 +101,7 @@ impl Piece {
                 let mut n: u32 = 0;
                 while n < max {
                     n += 1;
-                    let Some(id) = &current_cell.try_next_cellid(path.direction) else {
+                    let Some(id) = &current_cell.try_next_cellid(path.direction, 1) else {
                         break;
                     };
                     current_cell = *id;
@@ -145,8 +145,7 @@ impl Piece {
         valid_moves
     }
 
-    pub fn extra_moves(&self, cell: CellId, grid: &Grid, game: &Game) -> Vec<Path> {
-        let CellId(x, y) = cell;
+    pub fn extra_moves(&self, cell: CellId, grid: &Grid, game: &mut Game) -> Vec<Path> {
         let mut extra_moves: Vec<Path> = Vec::new();
         match self.piece_type {
             PieceType::Pawn => {
@@ -164,14 +163,10 @@ impl Piece {
                     }
                 }
                 // pawn en passant
-                for x_ in [x as i32 + 1, x as i32 - 1] {
-                    if x_ < 0 {
+                for direction in [Direction::Left, Direction::Right] {
+                    let Some(adj_cell) = cell.try_next_cellid(direction, 1) else {
                         continue;
-                    }
-                    let adj_cell = CellId(x_ as u32, y);
-                    if !adj_cell.is_valid() {
-                        continue;
-                    }
+                    };
                     let Some(piece) = &grid.get_cell(&adj_cell).item else {
                         continue;
                     };
@@ -189,17 +184,49 @@ impl Piece {
                         continue;
                     };
                     let diff = prev_cell.1.abs_diff(adj_cell.1);
+                    if diff == 2 {
+                        let move_dir = match direction {
+                            Direction::Left => {
+                                if self.side == Side::White {
+                                    Direction::UpLeft
+                                } else {
+                                    Direction::DownLeft
+                                }
+                            }
+                            Direction::Right => {
+                                if self.side == Side::White {
+                                    Direction::UpRight
+                                } else {
+                                    Direction::DownRight
+                                }
+                            }
+                            _ => Direction::Right,
+                        };
+                        extra_moves.push(Path {
+                            magnitude: Magnitude::Fixed(1),
+                            direction: move_dir,
+                        });
+                        game.en_passant = Some(EnPassant {
+                            dest: cell.try_next_cellid(move_dir, 1).unwrap(),
+                            current: cell,
+                            linked_pawn: adj_cell,
+                        })
+                    }
                 }
                 extra_moves
             }
             PieceType::King => {
+                // castle
+                if self.prev_cell.is_some() {
+                    return extra_moves;
+                }
                 for direction in [Direction::Right, Direction::Left] {
                     let max = 10;
                     let mut n = 0;
                     let mut current_cell = cell;
                     while n < max {
                         n += 1;
-                        let Some(next_cell) = &current_cell.try_next_cellid(direction) else {
+                        let Some(next_cell) = &current_cell.try_next_cellid(direction, 1) else {
                             break;
                         };
 
@@ -208,10 +235,20 @@ impl Piece {
                             continue;
                         };
                         if (piece.piece_type == PieceType::Rook) && (n > 2) {
+                            if piece.prev_cell.is_some() {
+                                continue;
+                            }
                             println!("castle available {:?}", direction);
-                            extra_moves.push(Path {
+                            let path = Path {
                                 magnitude: Magnitude::Fixed(2),
                                 direction,
+                            };
+                            extra_moves.push(path);
+                            game.castles.push(crate::game::Castle {
+                                dest: cell.try_next_cellid(direction, 2).unwrap(),
+                                current: cell,
+                                linked_rook: current_cell,
+                                rook_move_direction: direction.flip(),
                             });
                         } else {
                             break;
@@ -252,7 +289,7 @@ fn remove_cells_in_check(main: &mut Vec<CellId>, side: &Side, grid: &Grid) {
             let mut current_id: CellId = *valid_cell;
             let mut n = 0;
 
-            while let Some(new_id) = current_id.try_next_cellid(*direction) {
+            while let Some(new_id) = current_id.try_next_cellid(*direction, 1) {
                 if !continue_ {
                     break;
                 }

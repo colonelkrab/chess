@@ -71,7 +71,7 @@ impl Cell {
         piece.prev_cell = Some(self.id);
         piece.last_played_move = Some(game.move_count);
         dest.add_item(piece);
-
+        game.last_played = Some((self.id, dest.id));
         true
     }
 }
@@ -87,9 +87,11 @@ impl CellId {
         (self.0 < 8) & (self.1 < 8)
     }
 
-    pub fn try_next_cellid(&self, direction: Direction) -> Option<CellId> {
+    pub fn try_next_cellid(&self, direction: Direction, magnitude: i32) -> Option<CellId> {
         let CellId(x, y) = self;
+
         let (p, q) = direction.value();
+        let (p, q) = (p * magnitude, q * magnitude);
         let (x_, y_): (u32, u32) = (
             (*x as i32 + p).try_into().unwrap_or(10),
             (*y as i32 + q).try_into().unwrap_or(10),

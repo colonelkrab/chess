@@ -65,6 +65,26 @@ impl Direction {
         ];
         DIRECTIONS.iter()
     }
+    pub fn flip(&self) -> Direction {
+        match self {
+            Right => Left,
+            Left => Right,
+            Up => Down,
+            Down => Up,
+            UpRight => DownLeft,
+            UpLeft => DownRight,
+            DownRight => UpLeft,
+            DownLeft => UpRight,
+            LUpRight1 => LDownLeft2,
+            LUpLeft1 => LDownRight2,
+            LDownRight1 => LUpLeft2,
+            LDownLeft1 => LUpRight2,
+            LUpRight2 => LDownLeft1,
+            LUpLeft2 => LDownRight1,
+            LDownRight2 => LUpLeft1,
+            LDownLeft2 => LUpRight1,
+        }
+    }
 }
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Magnitude {
@@ -156,7 +176,7 @@ impl Path {
         let mut temp = origin;
         while i < n {
             i += 1;
-            let new = temp.try_next_cellid(self.direction).unwrap();
+            let new = temp.try_next_cellid(self.direction, 1).unwrap();
             cells.push(new);
             temp = new;
             println!("{:?}", cells);

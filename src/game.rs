@@ -1,4 +1,4 @@
-use crate::grid::{CellId, Grid};
+use crate::grid::{Cell, CellId, Grid};
 use crate::path::{Direction, Magnitude, Path};
 use crate::pieces::{Piece, PieceType, Side};
 use crate::textures::PieceTxts;
@@ -23,6 +23,9 @@ pub struct Game {
     pub black_king: CellId,
     pub checked: Option<Check>,
     pub move_count: u32,
+    pub en_passant: Option<EnPassant>,
+    pub castles: Vec<Castle>,
+    pub last_played: Option<(CellId, CellId)>,
 }
 
 impl Game {
@@ -56,10 +59,26 @@ impl Game {
             black_king: CellId(4, 0),
             checked: None,
             move_count: 0,
+            en_passant: None,
+            last_played: None,
+            castles: Vec::new(),
         }
     }
 
     pub fn switch_turns(&mut self, grid: &mut Grid) {
+        let last_played = self.last_played.unwrap();
+        if let Some(en_passant) = &self.en_passant.take() {
+            en_passant
+                .is(&last_played.0, &last_played.1)
+                .then(|| en_passant.execute(grid, self));
+        }
+        for castle in self.castles.iter() {
+            if castle.is(&last_played.0, &last_played.1) {
+                castle.execute(grid);
+                break;
+            }
+        }
+
         self.turn = self.turn.switch();
         self.move_count += 1;
         for id in &self.cell_cache {
@@ -68,6 +87,7 @@ impl Game {
             cell.pin = None;
         }
         self.cell_cache.clear();
+        self.castles.clear();
 
         let status = self.get_board_status(grid).unwrap();
         if !status.checks.is_empty() {
@@ -104,7 +124,7 @@ impl Game {
 
             while n < 10 {
                 n += 1;
-                let Some(id) = &current_cell.try_next_cellid(*direction) else {
+                let Some(id) = &current_cell.try_next_cellid(*direction, 1) else {
                     break;
                 };
 
@@ -203,5 +223,42 @@ impl AlgebraicNotation {
         let cell = CellId(x, y);
 
         Self { side, piece, cell }
+    }
+}
+#[derive(Debug)]
+pub struct EnPassant {
+    pub dest: CellId,
+    pub current: CellId,
+    pub linked_pawn: CellId,
+}
+impl EnPassant {
+    pub fn is(&self, current_cell: &CellId, dest_cell: &CellId) -> bool {
+        (*current_cell == self.current) && (self.dest == *dest_cell)
+    }
+    pub fn execute(&self, grid: &mut Grid, game: &mut Game) {
+        let linked_cell: &mut Cell = grid.get_cell_mut(&self.linked_pawn);
+        game.move_to_stack(linked_cell.item.take().unwrap());
+    }
+}
+
+#[derive(Debug)]
+pub struct Castle {
+    pub dest: CellId,
+    pub current: CellId,
+    pub linked_rook: CellId,
+    pub rook_move_direction: Direction,
+}
+impl Castle {
+    pub fn is(&self, current_cell: &CellId, dest_cell: &CellId) -> bool {
+        (*current_cell == self.current) && (self.dest == *dest_cell)
+    }
+    pub fn execute(&self, grid: &mut Grid) {
+        let rook_new_id = self
+            .dest
+            .try_next_cellid(self.rook_move_direction, 1)
+            .unwrap();
+        let (current_, dest_) = grid.get_cell_mut_pair(&self.linked_rook, &rook_new_id);
+        let rook = current_.item.take().unwrap();
+        dest_.add_item(rook);
     }
 }
