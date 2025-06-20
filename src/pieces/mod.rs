@@ -128,17 +128,18 @@ impl Piece {
         let mut valid_moves = Vec::from_iter(valid_moves);
         if self.piece_type == PieceType::King {
             remove_cells_in_check(&mut valid_moves, &self.side, grid);
+            println!("{:?}", valid_moves);
             return valid_moves;
         };
 
         if let Some(pin) = cell.pin {
-            println!("some pin");
+            // println!("some pin");
             let cellids_in_pin = pin.get_cell_ids(cell.id).unwrap();
             valid_moves = common_moves(&valid_moves, &cellids_in_pin);
         }
         if let Some(check) = &game.checked {
             let check_cellids = check.path.get_cell_ids(*game.king_now()).unwrap();
-            println!("checkids: {:?} , valid: {:?}", &check_cellids, &valid_moves);
+            // println!("checkids: {:?} , valid: {:?}", &check_cellids, &valid_moves);
             valid_moves = common_moves(&valid_moves, &check_cellids);
         }
 
@@ -280,19 +281,19 @@ fn common_moves(vec1: &[CellId], vec2: &[CellId]) -> Vec<CellId> {
 fn remove_cells_in_check(main: &mut Vec<CellId>, side: &Side, grid: &Grid) {
     let mut remove_list: Vec<usize> = Vec::new();
     for (i, valid_cell) in main.iter().enumerate() {
-        let mut continue_ = true;
+        // let mut continue_ = true;
 
         for direction in Direction::iterator() {
-            if !continue_ {
-                break;
-            }
+            // if !continue_ {
+            //     break;
+            // }
             let mut current_id: CellId = *valid_cell;
             let mut n = 0;
 
             while let Some(new_id) = current_id.try_next_cellid(*direction, 1) {
-                if !continue_ {
-                    break;
-                }
+                // if !continue_ {
+                //     break;
+                // }
                 current_id = new_id;
                 n += 1;
                 let cell = grid.get_cell(&current_id);
@@ -316,13 +317,15 @@ fn remove_cells_in_check(main: &mut Vec<CellId>, side: &Side, grid: &Grid) {
                             break;
                         }
                     }
-                    continue_ = false;
+                    // continue_ = false;
+                    break;
                 }
             }
         }
     }
 
     remove_list.reverse();
+    println!("valid: {:?},remove_list: {:?}", main, remove_list);
     for i in remove_list {
         main.remove(i);
     }
